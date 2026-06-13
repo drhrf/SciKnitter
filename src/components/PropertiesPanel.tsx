@@ -21,6 +21,41 @@ export function PropertiesPanel() {
 
   const selectedNode = selectedNodes[0] ?? null
   const selectedEdge = selectedEdges[0] ?? null
+  const multiSelect = selectedNodes.length > 1 || (selectedNodes.length >= 1 && selectedEdges.length >= 1)
+
+  // Multi-selection panel
+  if (multiSelect) {
+    const nodeCount = selectedNodes.length
+    const edgeCount = selectedEdges.length
+    return (
+      <aside className="w-52 min-w-[13rem] border-l border-gray-200 bg-gray-50 flex flex-col">
+        <div className="p-4 space-y-4">
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            Selection
+          </h2>
+          <div className="space-y-1 text-xs text-gray-600">
+            {nodeCount > 0 && <p>{nodeCount} node{nodeCount > 1 ? 's' : ''} selected</p>}
+            {edgeCount > 0 && <p>{edgeCount} edge{edgeCount > 1 ? 's' : ''} selected</p>}
+          </div>
+          <p className="text-[10px] text-gray-400">
+            Drag any selected node to move all together. Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-[9px] font-mono">Delete</kbd> to remove all.
+          </p>
+          <button
+            onClick={() =>
+              deleteElements({
+                nodes: selectedNodes.map((n) => ({ id: n.id })),
+                edges: selectedEdges.map((e) => ({ id: e.id })),
+              })
+            }
+            className="w-full flex items-center justify-center gap-1.5 text-xs text-red-600 border border-red-200 rounded-md py-1.5 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete all selected
+          </button>
+        </div>
+      </aside>
+    )
+  }
 
   if (!selectedNode && !selectedEdge) {
     return (

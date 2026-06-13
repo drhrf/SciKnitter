@@ -11,6 +11,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  SelectionMode,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -38,6 +39,8 @@ export interface DiagramCanvasHandle {
 
 interface DiagramCanvasProps {
   snapToGrid: boolean
+  /** When true: left-drag draws a selection box; pan uses middle/right mouse */
+  isSelecting: boolean
 }
 
 const defaultEdgeOptions = {
@@ -67,7 +70,7 @@ function createRFNode(icon: Icon, position: { x: number; y: number }): Node {
 }
 
 export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>(
-  function DiagramCanvas({ snapToGrid }, ref) {
+  function DiagramCanvas({ snapToGrid, isSelecting }, ref) {
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
     const { screenToFlowPosition } = useReactFlow()
@@ -150,6 +153,9 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           defaultEdgeOptions={defaultEdgeOptions}
           snapToGrid={snapToGrid}
           snapGrid={[20, 20]}
+          selectionOnDrag={isSelecting}
+          panOnDrag={isSelecting ? [1, 2] : true}
+          selectionMode={SelectionMode.Partial}
           fitView
           fitViewOptions={{ padding: 0.4 }}
           deleteKeyCode="Delete"
