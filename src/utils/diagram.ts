@@ -49,11 +49,14 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
       svgContent: icon?.svgContent ?? fallbackSvg(n.iconId),
       label: n.label,
       category: icon?.category ?? 'Unknown',
+      bgColor: n.bgColor ?? '',
     }
     return {
       id: n.id,
       type: 'iconNode',
       position: { x: n.x, y: n.y },
+      width: n.width ?? 110,
+      height: n.height ?? 100,
       data,
     }
   })
@@ -105,6 +108,9 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
         label: d.label,
         x: Math.round(n.position.x),
         y: Math.round(n.position.y),
+        width: n.width ? Math.round(n.width) : undefined,
+        height: n.height ? Math.round(n.height) : undefined,
+        bgColor: d.bgColor || undefined,
       }
     }),
     edges: edges.map((e) => {
@@ -216,6 +222,9 @@ export function parseDiagramSpec(raw: string): DiagramExport {
         label: String(node.label ?? ''),
         x: Number(node.x ?? 0),
         y: Number(node.y ?? 0),
+        width: node.width ? Number(node.width) : undefined,
+        height: node.height ? Number(node.height) : undefined,
+        bgColor: typeof node.bgColor === 'string' ? node.bgColor : undefined,
       }
     }),
     edges: (obj.edges as unknown[]).map((e, i) => {

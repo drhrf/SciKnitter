@@ -299,6 +299,33 @@ export function PropertiesPanel() {
             </p>
           </div>
 
+          {/* Background */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Background</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={nodeData.bgColor === 'transparent'}
+                onChange={(e) =>
+                  patchNodeData(selectedNode.id, { bgColor: e.target.checked ? 'transparent' : '' })
+                }
+                className="rounded"
+              />
+              <span className="text-xs text-gray-500">Transparent</span>
+            </div>
+            {nodeData.bgColor !== 'transparent' && (
+              <div className="flex items-center gap-2 mt-1.5">
+                <input
+                  type="color"
+                  value={nodeData.bgColor || '#ffffff'}
+                  onChange={(e) => patchNodeData(selectedNode.id, { bgColor: e.target.value })}
+                  className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
+                />
+                <span className="text-xs text-gray-400">Fill color</span>
+              </div>
+            )}
+          </div>
+
           {/* Delete */}
           <button
             onClick={() => deleteElements({ nodes: [{ id: selectedNode.id }] })}

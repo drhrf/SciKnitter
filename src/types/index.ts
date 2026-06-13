@@ -12,6 +12,7 @@ export interface IconNodeData {
   svgContent: string
   label: string
   category: string
+  bgColor?: string
   [key: string]: unknown
 }
 
@@ -53,7 +54,17 @@ export interface DiagramSpec {
 }
 
 export type DiagramNodeExport =
-  | { nodeType?: 'icon'; id: string; iconId: string; label: string; x: number; y: number }
+  | {
+      nodeType?: 'icon'
+      id: string
+      iconId: string
+      label: string
+      x: number
+      y: number
+      width?: number
+      height?: number
+      bgColor?: string
+    }
   | {
       nodeType: 'text'
       id: string

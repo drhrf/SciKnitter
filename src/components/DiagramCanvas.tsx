@@ -12,6 +12,7 @@ import {
   Controls,
   MiniMap,
   SelectionMode,
+  ConnectionMode,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -66,6 +67,8 @@ function createRFNode(icon: Icon, position: { x: number; y: number }): Node {
     id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     type: 'iconNode',
     position,
+    width: 110,
+    height: 100,
     data,
   }
 }
@@ -184,6 +187,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           selectionOnDrag={isSelecting}
           panOnDrag={isSelecting ? [1, 2] : true}
           selectionMode={SelectionMode.Partial}
+          connectionMode={ConnectionMode.Loose}
           fitView
           fitViewOptions={{ padding: 0.4 }}
           deleteKeyCode="Delete"

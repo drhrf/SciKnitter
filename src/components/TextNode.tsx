@@ -27,10 +27,10 @@ export function TextNode({ id, data, selected }: NodeProps) {
         lineStyle={{ borderColor: '#3b82f6', borderWidth: 1 }}
       />
 
-      <Handle id="t" type="target" position={Position.Top} className={handleStyle} />
-      <Handle id="b" type="source" position={Position.Bottom} className={handleStyle} />
-      <Handle id="l" type="target" position={Position.Left} className={handleStyle} />
-      <Handle id="r" type="source" position={Position.Right} className={handleStyle} />
+      <Handle id="top" type="source" position={Position.Top} className={handleStyle} />
+      <Handle id="bottom" type="source" position={Position.Bottom} className={handleStyle} />
+      <Handle id="left" type="source" position={Position.Left} className={handleStyle} />
+      <Handle id="right" type="source" position={Position.Right} className={handleStyle} />
 
       <div
         className="w-full h-full overflow-hidden"

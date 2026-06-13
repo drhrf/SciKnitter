@@ -20,10 +20,10 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
   const allX = spec.nodes.map((n) => n.x)
   const allY = spec.nodes.map((n) => n.y)
   const allRight = spec.nodes.map((n) =>
-    n.nodeType === 'text' ? n.x + (n.width ?? 200) : n.x + NODE_W,
+    n.nodeType === 'text' ? n.x + (n.width ?? 200) : n.x + (n.width ?? NODE_W),
   )
   const allBottom = spec.nodes.map((n) =>
-    n.nodeType === 'text' ? n.y + (n.height ?? 60) : n.y + NODE_H,
+    n.nodeType === 'text' ? n.y + (n.height ?? 60) : n.y + (n.height ?? NODE_H),
   )
 
   const ox = Math.min(...allX) - PAD
@@ -46,9 +46,9 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
       const tgt = nodeMap.get(edge.to)
       if (!src || !tgt) return ''
 
-      const srcW = src.nodeType === 'text' ? (src.width ?? 200) : NODE_W
-      const srcH = src.nodeType === 'text' ? (src.height ?? 60) : NODE_H
-      const tgtW = tgt.nodeType === 'text' ? (tgt.width ?? 200) : NODE_W
+      const srcW = src.nodeType === 'text' ? (src.width ?? 200) : (src.width ?? NODE_W)
+      const srcH = src.nodeType === 'text' ? (src.height ?? 60) : (src.height ?? NODE_H)
+      const tgtW = tgt.nodeType === 'text' ? (tgt.width ?? 200) : (tgt.width ?? NODE_W)
 
       const sx = src.x + srcW / 2 - ox
       const sy = src.y + srcH - oy
@@ -118,6 +118,9 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
       const icon = iconMap.get(node.iconId)
       const nx = node.x - ox
       const ny = node.y - oy
+      const nw = node.width ?? NODE_W
+      const nh = node.height ?? NODE_H
+      const bgFill = node.bgColor === 'transparent' ? 'none' : (node.bgColor || 'white')
       const innerSvg = icon
         ? icon.svgContent
             .replace(/<svg[^>]*xmlns[^>]*>/g, '')
@@ -126,12 +129,14 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
             .trim()
         : `<rect x="10" y="10" width="60" height="60" rx="6" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5"/>`
 
-      const iconX = Math.round((NODE_W - 64) / 2)
+      const labelY = nh - 4
+      const iconSize = Math.round(Math.min(nw, nh - 20) * 0.8)
+      const iconX = Math.round((nw - iconSize) / 2)
 
       return `  <g transform="translate(${nx},${ny})">
-    <rect width="${NODE_W}" height="${NODE_H}" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
-    <svg x="${iconX}" y="8" viewBox="0 0 80 80" width="64" height="64">${innerSvg}</svg>
-    <text x="${NODE_W / 2}" y="88" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="10.5" fill="#374151">${escapeXml(node.label)}</text>
+    <rect width="${nw}" height="${nh}" rx="10" fill="${bgFill}" stroke="${bgFill === 'none' ? 'none' : '#e2e8f0'}" stroke-width="1.5"/>
+    <svg x="${iconX}" y="6" viewBox="0 0 80 80" width="${iconSize}" height="${iconSize}">${innerSvg}</svg>
+    <text x="${nw / 2}" y="${labelY}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="10.5" fill="#374151">${escapeXml(node.label)}</text>
   </g>`
     })
     .join('\n')
