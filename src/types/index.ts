@@ -39,3 +39,22 @@ export interface DiagramSpec {
     style: EdgeStyle
   }>
 }
+
+/** Portable diagram format — used for save/load, SVG export, and LLM round-trips */
+export interface DiagramExport {
+  title: string
+  nodes: Array<{
+    id: string
+    iconId: string
+    label: string
+    x: number
+    y: number
+  }>
+  edges: Array<{
+    id: string
+    from: string
+    to: string
+    label?: string
+    style: EdgeStyle
+  }>
+}
