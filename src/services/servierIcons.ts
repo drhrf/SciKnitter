@@ -1,15 +1,20 @@
 /**
- * Fetches the Servier Medical Art icon tree from the holtzy/servier
- * GitHub repository and caches it in localStorage for 48 hours.
+ * Fetches Servier Medical Art icons from the duerrsimon/bioicons
+ * GitHub repository and caches the index in localStorage for 48 hours.
+ *
+ * Icons live at:
+ *   static/icons/cc-by-3.0/<Category>/Servier/<name>.svg
  *
  * SVG thumbnails are served directly from raw.githubusercontent.com
- * (which supports CORS GET requests). Full SVG content is fetched
- * on-demand when the user adds an icon to the canvas.
+ * (CORS-enabled). Full SVG content is fetched on-demand when the
+ * user adds an icon to the canvas.
  */
 
-const OWNER = 'holtzy'
-const REPO = 'servier'
-const CACHE_KEY = 'sciknitter:servier:v1'
+const OWNER = 'duerrsimon'
+const REPO = 'bioicons'
+const BRANCH = 'main'
+const SERVIER_PREFIX = 'static/icons/cc-by-3.0/'
+const CACHE_KEY = 'sciknitter:servier:v2'
 const CACHE_TTL_MS = 48 * 60 * 60 * 1000 // 48 hours
 
 export interface ServierIcon {
@@ -23,7 +28,6 @@ export interface ServierIcon {
 
 interface CacheData {
   icons: ServierIcon[]
-  branch: string
   cachedAt: number
 }
 
@@ -38,24 +42,29 @@ function prettify(s: string): string {
     .trim()
 }
 
-function pathToIcon(path: string, branch: string): ServierIcon {
+/**
+ * Path format: static/icons/cc-by-3.0/<Category>/Servier/<filename>.svg
+ * parts[0]=static  [1]=icons  [2]=cc-by-3.0  [3]=Category  [4]=Servier  [5]=filename
+ */
+function pathToIcon(path: string): ServierIcon {
   const noExt = path.replace(/\.svg$/i, '')
   const parts = noExt.split('/')
   const filename = parts[parts.length - 1] ?? 'icon'
-  const folder = parts.length > 1 ? parts[parts.length - 2] : 'Uncategorized'
+  // Category is two levels up from the filename (one above "Servier")
+  const category = parts.length >= 4 ? parts[parts.length - 3] : 'Uncategorized'
 
   const tags = [
     ...filename.toLowerCase().split(/[_\-\s]+/),
-    ...folder.toLowerCase().split(/[_\-\s]+/),
+    ...category.toLowerCase().split(/[_\-\s]+/),
   ].filter((t) => t.length > 1)
 
   return {
     id: `servier:${noExt.replace(/\//g, ':')}`,
     name: prettify(filename),
-    category: prettify(folder),
+    category: prettify(category.replace(/_/g, ' ')),
     tags: [...new Set(tags)],
     path,
-    branch,
+    branch: BRANCH,
   }
 }
 
@@ -83,14 +92,18 @@ export function clearServierCache() {
   localStorage.removeItem(CACHE_KEY)
 }
 
-async function treeForBranch(
-  branch: string,
-): Promise<Array<{ type: string; path: string }> | null> {
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${branch}?recursive=1`
+export async function fetchServierIndex(): Promise<ServierIcon[]> {
+  const cached = readCache()
+  if (cached) return cached.icons
+
+  const url = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`
   const res = await fetch(url, {
     headers: { Accept: 'application/vnd.github.v3+json' },
   })
-  if (res.status === 404) return null
+
+  if (res.status === 404) {
+    throw new Error(`Repository "${OWNER}/${REPO}" not found on GitHub.`)
+  }
   if (res.status === 403) {
     const reset = res.headers.get('X-RateLimit-Reset')
     const time = reset
@@ -98,38 +111,27 @@ async function treeForBranch(
       : 'soon'
     throw new Error(`GitHub API rate limit reached — resets at ${time}.`)
   }
-  if (!res.ok) throw new Error(`GitHub API error ${res.status}: ${res.statusText}`)
+  if (!res.ok) {
+    throw new Error(`GitHub API error ${res.status}: ${res.statusText}`)
+  }
+
   const body: { tree: Array<{ type: string; path: string }> } = await res.json()
-  return body.tree
-}
 
-export async function fetchServierIndex(): Promise<ServierIcon[]> {
-  const cached = readCache()
-  if (cached) return cached.icons
-
-  let tree: Array<{ type: string; path: string }> | null = null
-  let branch = 'master'
-
-  tree = await treeForBranch('master')
-  if (!tree) {
-    branch = 'main'
-    tree = await treeForBranch('main')
-  }
-  if (!tree) {
-    throw new Error(
-      'Repository "holtzy/servier" not found on GitHub. The Servier icon source may have moved.',
+  const icons = body.tree
+    .filter(
+      (f) =>
+        f.type === 'blob' &&
+        f.path.startsWith(SERVIER_PREFIX) &&
+        f.path.includes('/Servier/') &&
+        /\.svg$/i.test(f.path),
     )
-  }
-
-  const icons = tree
-    .filter((f) => f.type === 'blob' && /\.svg$/i.test(f.path))
-    .map((f) => pathToIcon(f.path, branch))
+    .map((f) => pathToIcon(f.path))
 
   if (icons.length === 0) {
-    throw new Error('No SVG files found in the repository.')
+    throw new Error('No Servier SVG files found in the repository.')
   }
 
-  writeCache({ icons, branch, cachedAt: Date.now() })
+  writeCache({ icons, cachedAt: Date.now() })
   return icons
 }
 
