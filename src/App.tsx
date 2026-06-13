@@ -9,6 +9,7 @@ import {
   LayoutTemplate,
   MousePointer2,
   Trash2,
+  Type,
   Wand2,
 } from 'lucide-react'
 import { IconBrowser } from './components/IconBrowser'
@@ -167,6 +168,16 @@ export function App() {
           <Wand2 className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">LLM Workflow</span>
           <span className="sm:hidden">LLM</span>
+        </button>
+
+        {/* Add Text */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('sciknitter:addtext'))}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
+          title="Add a text box"
+        >
+          <Type className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Text</span>
         </button>
 
         {/* Templates */}

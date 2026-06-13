@@ -1,7 +1,14 @@
 import type { Edge, Node } from '@xyflow/react'
 import { MarkerType } from '@xyflow/react'
 import { getAllIcons } from '../data/iconsIndex'
-import type { DiagramExport, EdgeData, EdgeStyle, IconNodeData } from '../types'
+import type {
+  DiagramExport,
+  DiagramNodeExport,
+  EdgeData,
+  EdgeStyle,
+  IconNodeData,
+  TextNodeData,
+} from '../types'
 
 const iconLookup = new Map(getAllIcons().map((i) => [i.id, i]))
 
@@ -16,6 +23,26 @@ function fallbackSvg(iconId: string): string {
 
 export function specToRFNodes(spec: DiagramExport): Node[] {
   return spec.nodes.map((n) => {
+    if (n.nodeType === 'text') {
+      const data: TextNodeData = {
+        text: n.text,
+        fontSize: n.fontSize ?? 14,
+        fontWeight: n.fontWeight ?? 'normal',
+        fontStyle: n.fontStyle ?? 'normal',
+        textColor: n.textColor ?? '#1e293b',
+        bgColor: n.bgColor ?? '',
+        borderColor: n.borderColor ?? '',
+        textAlign: n.textAlign ?? 'left',
+      }
+      return {
+        id: n.id,
+        type: 'textNode',
+        position: { x: n.x, y: n.y },
+        width: n.width ?? 200,
+        height: n.height ?? 60,
+        data,
+      }
+    }
     const icon = iconLookup.get(n.iconId)
     const data: IconNodeData = {
       iconId: n.iconId,
@@ -51,7 +78,26 @@ export function specToRFEdges(spec: DiagramExport): Edge[] {
 export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramExport {
   return {
     title,
-    nodes: nodes.map((n) => {
+    nodes: nodes.map((n): DiagramNodeExport => {
+      if (n.type === 'textNode') {
+        const d = n.data as TextNodeData
+        return {
+          nodeType: 'text',
+          id: n.id,
+          x: Math.round(n.position.x),
+          y: Math.round(n.position.y),
+          width: n.width ? Math.round(n.width) : undefined,
+          height: n.height ? Math.round(n.height) : undefined,
+          text: d.text,
+          fontSize: d.fontSize,
+          fontWeight: d.fontWeight,
+          fontStyle: d.fontStyle,
+          textColor: d.textColor,
+          bgColor: d.bgColor || undefined,
+          borderColor: d.borderColor || undefined,
+          textAlign: d.textAlign,
+        }
+      }
       const d = n.data as IconNodeData
       return {
         id: n.id,
@@ -101,6 +147,7 @@ RULES
     "arrow"  = activation / positive regulation / flow
     "blunt"  = inhibition / negative regulation
     "dashed" = indirect relationship / unknown mechanism
+- You may also add text box annotations with nodeType "text"
 
 OUTPUT
 ======
@@ -109,7 +156,8 @@ Return ONLY valid JSON — no markdown code fences, no explanation, no extra tex
 {
   "title": "string",
   "nodes": [
-    { "id": "n1", "iconId": "exact-id-from-list", "label": "Display Name", "x": 100, "y": 100 }
+    { "id": "n1", "iconId": "exact-id-from-list", "label": "Display Name", "x": 100, "y": 100 },
+    { "nodeType": "text", "id": "t1", "text": "Annotation text", "x": 300, "y": 50, "width": 200, "height": 40 }
   ],
   "edges": [
     { "id": "e1", "from": "n1", "to": "n2", "label": "optional label", "style": "arrow" }
@@ -135,9 +183,33 @@ export function parseDiagramSpec(raw: string): DiagramExport {
 
   return {
     title: typeof obj.title === 'string' ? obj.title : 'Untitled',
-    nodes: (obj.nodes as unknown[]).map((n, i) => {
+    nodes: (obj.nodes as unknown[]).map((n, i): DiagramNodeExport => {
       if (typeof n !== 'object' || n === null) throw new Error(`Node ${i} is not an object`)
       const node = n as Record<string, unknown>
+
+      if (node.nodeType === 'text') {
+        return {
+          nodeType: 'text',
+          id: String(node.id ?? `t${i}`),
+          x: Number(node.x ?? 0),
+          y: Number(node.y ?? 0),
+          width: node.width ? Number(node.width) : undefined,
+          height: node.height ? Number(node.height) : undefined,
+          text: String(node.text ?? ''),
+          fontSize: node.fontSize ? Number(node.fontSize) : undefined,
+          fontWeight: node.fontWeight === 'bold' ? 'bold' : 'normal',
+          fontStyle: node.fontStyle === 'italic' ? 'italic' : 'normal',
+          textColor: typeof node.textColor === 'string' ? node.textColor : undefined,
+          bgColor: typeof node.bgColor === 'string' ? node.bgColor : undefined,
+          borderColor: typeof node.borderColor === 'string' ? node.borderColor : undefined,
+          textAlign: (['left', 'center', 'right'] as const).includes(
+            node.textAlign as 'left' | 'center' | 'right',
+          )
+            ? (node.textAlign as 'left' | 'center' | 'right')
+            : 'left',
+        }
+      }
+
       return {
         id: String(node.id ?? `n${i}`),
         iconId: String(node.iconId ?? ''),

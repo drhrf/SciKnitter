@@ -27,9 +27,10 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import { IconNode } from './IconNode'
+import { TextNode } from './TextNode'
 import { CustomEdge } from './CustomEdge'
 import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
-import type { DiagramExport, Icon, IconNodeData } from '../types'
+import type { DiagramExport, Icon, IconNodeData, TextNodeData } from '../types'
 
 export interface DiagramCanvasHandle {
   getSpec: (title: string) => DiagramExport
@@ -75,7 +76,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
     const { screenToFlowPosition } = useReactFlow()
 
-    const nodeTypes: NodeTypes = useMemo(() => ({ iconNode: IconNode }), [])
+    const nodeTypes: NodeTypes = useMemo(() => ({ iconNode: IconNode, textNode: TextNode }), [])
     const edgeTypes: EdgeTypes = useMemo(() => ({ custom: CustomEdge }), [])
 
     useImperativeHandle(
@@ -136,6 +137,33 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       }
       window.addEventListener('sciknitter:addicon', handler)
       return () => window.removeEventListener('sciknitter:addicon', handler)
+    }, [])
+
+    useEffect(() => {
+      function handler() {
+        const data: TextNodeData = {
+          text: '',
+          fontSize: 14,
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          textColor: '#1e293b',
+          bgColor: '',
+          borderColor: '',
+          textAlign: 'left',
+        }
+        setNodesRef.current((nds) =>
+          nds.concat({
+            id: `text-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            type: 'textNode',
+            position: { x: 160 + Math.random() * 300, y: 100 + Math.random() * 200 },
+            width: 200,
+            height: 60,
+            data,
+          }),
+        )
+      }
+      window.addEventListener('sciknitter:addtext', handler)
+      return () => window.removeEventListener('sciknitter:addtext', handler)
     }, [])
 
     return (

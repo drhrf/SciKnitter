@@ -16,12 +16,20 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
 </svg>`
   }
 
-  const xs = spec.nodes.map((n) => n.x)
-  const ys = spec.nodes.map((n) => n.y)
-  const ox = Math.min(...xs) - PAD
-  const oy = Math.min(...ys) - (title ? PAD + 24 : PAD)
-  const W = Math.max(...xs) + NODE_W + PAD - ox
-  const H = Math.max(...ys) + NODE_H + PAD - oy
+  // Bounding box across all node types
+  const allX = spec.nodes.map((n) => n.x)
+  const allY = spec.nodes.map((n) => n.y)
+  const allRight = spec.nodes.map((n) =>
+    n.nodeType === 'text' ? n.x + (n.width ?? 200) : n.x + NODE_W,
+  )
+  const allBottom = spec.nodes.map((n) =>
+    n.nodeType === 'text' ? n.y + (n.height ?? 60) : n.y + NODE_H,
+  )
+
+  const ox = Math.min(...allX) - PAD
+  const oy = Math.min(...allY) - (title ? PAD + 24 : PAD)
+  const W = Math.max(...allRight) + PAD - ox
+  const H = Math.max(...allBottom) + PAD - oy
 
   const defs = `  <defs>
     <marker id="sk-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
@@ -38,9 +46,13 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
       const tgt = nodeMap.get(edge.to)
       if (!src || !tgt) return ''
 
-      const sx = src.x + NODE_W / 2 - ox
-      const sy = src.y + NODE_H - oy
-      const tx = tgt.x + NODE_W / 2 - ox
+      const srcW = src.nodeType === 'text' ? (src.width ?? 200) : NODE_W
+      const srcH = src.nodeType === 'text' ? (src.height ?? 60) : NODE_H
+      const tgtW = tgt.nodeType === 'text' ? (tgt.width ?? 200) : NODE_W
+
+      const sx = src.x + srcW / 2 - ox
+      const sy = src.y + srcH - oy
+      const tx = tgt.x + tgtW / 2 - ox
       const ty = tgt.y - oy
 
       const dy = Math.max(36, Math.abs(ty - sy) * 0.45)
@@ -67,6 +79,42 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
 
   const nodeEls = spec.nodes
     .map((node) => {
+      if (node.nodeType === 'text') {
+        const nx = node.x - ox
+        const ny = node.y - oy
+        const nw = node.width ?? 200
+        const nh = node.height ?? 60
+        const fontSize = node.fontSize ?? 14
+        const fontWeight = node.fontWeight ?? 'normal'
+        const fontStyle = node.fontStyle ?? 'normal'
+        const textColor = node.textColor || '#1e293b'
+        const bgFill = node.bgColor || 'none'
+        const borderStroke = node.borderColor || 'none'
+        const textAlign = node.textAlign ?? 'left'
+
+        const anchor = textAlign === 'center' ? 'middle' : textAlign === 'right' ? 'end' : 'start'
+        const textX =
+          textAlign === 'center' ? nx + nw / 2 : textAlign === 'right' ? nx + nw - 8 : nx + 8
+
+        const lines = node.text.split('\n')
+        const lineH = fontSize * 1.5
+        const tspans = lines
+          .map((line, idx) => {
+            const dy = idx === 0 ? fontSize + 6 : lineH
+            return `<tspan x="${textX}" dy="${dy}">${escapeXml(line || ' ')}</tspan>`
+          })
+          .join('')
+
+        const bgEl =
+          bgFill !== 'none' || borderStroke !== 'none'
+            ? `  <rect x="${nx}" y="${ny}" width="${nw}" height="${nh}" rx="6" fill="${bgFill}" stroke="${borderStroke}" stroke-width="1.5"/>`
+            : ''
+
+        const textEl = `  <text font-family="-apple-system,sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" font-style="${fontStyle}" fill="${textColor}" text-anchor="${anchor}">${tspans}</text>`
+
+        return [bgEl, textEl].filter(Boolean).join('\n')
+      }
+
       const icon = iconMap.get(node.iconId)
       const nx = node.x - ox
       const ny = node.y - oy

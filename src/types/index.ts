@@ -15,6 +15,18 @@ export interface IconNodeData {
   [key: string]: unknown
 }
 
+export interface TextNodeData {
+  text: string
+  fontSize: number
+  fontWeight: 'normal' | 'bold'
+  fontStyle: 'normal' | 'italic'
+  textColor: string
+  bgColor: string
+  borderColor: string
+  textAlign: 'left' | 'center' | 'right'
+  [key: string]: unknown
+}
+
 export type EdgeStyle = 'arrow' | 'blunt' | 'dashed' | 'bidirectional'
 
 export interface EdgeData {
@@ -40,16 +52,29 @@ export interface DiagramSpec {
   }>
 }
 
+export type DiagramNodeExport =
+  | { nodeType?: 'icon'; id: string; iconId: string; label: string; x: number; y: number }
+  | {
+      nodeType: 'text'
+      id: string
+      x: number
+      y: number
+      width?: number
+      height?: number
+      text: string
+      fontSize?: number
+      fontWeight?: 'normal' | 'bold'
+      fontStyle?: 'normal' | 'italic'
+      textColor?: string
+      bgColor?: string
+      borderColor?: string
+      textAlign?: 'left' | 'center' | 'right'
+    }
+
 /** Portable diagram format — used for save/load, SVG export, and LLM round-trips */
 export interface DiagramExport {
   title: string
-  nodes: Array<{
-    id: string
-    iconId: string
-    label: string
-    x: number
-    y: number
-  }>
+  nodes: DiagramNodeExport[]
   edges: Array<{
     id: string
     from: string
