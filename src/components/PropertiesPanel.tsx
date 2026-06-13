@@ -17,7 +17,7 @@ const EDGE_STYLES: { value: EdgeStyle; label: string; description: string }[] = 
 ]
 
 export function PropertiesPanel() {
-  const { setNodes, setEdges, deleteElements } = useReactFlow()
+  const { setNodes, setEdges, deleteElements, getNodes } = useReactFlow()
 
   const selectedNodes = useStore((s) => s.nodes.filter((n) => n.selected))
   const selectedEdges = useStore((s) => s.edges.filter((e) => e.selected))
@@ -250,6 +250,35 @@ export function PropertiesPanel() {
             </div>
           </div>
 
+          {/* Layer order */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Layer order</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => {
+                  const all = getNodes()
+                  const maxZ = Math.max(0, ...all.map(n => (n.zIndex ?? 0) as number))
+                  setNodes(all.map(n => n.id === selectedNode.id ? {...n, zIndex: maxZ + 1} : n))
+                }}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors"
+                title="Bring to front"
+              >
+                ↑ Front
+              </button>
+              <button
+                onClick={() => {
+                  const all = getNodes()
+                  const minZ = Math.min(0, ...all.map(n => (n.zIndex ?? 0) as number))
+                  setNodes(all.map(n => n.id === selectedNode.id ? {...n, zIndex: minZ - 1} : n))
+                }}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors"
+                title="Send to back"
+              >
+                ↓ Back
+              </button>
+            </div>
+          </div>
+
           {/* Delete */}
           <button
             onClick={() => deleteElements({ nodes: [{ id: selectedNode.id }] })}
@@ -299,6 +328,29 @@ export function PropertiesPanel() {
             </p>
           </div>
 
+          {/* Rotation */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Rotation</label>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => patchNodeData(selectedNode.id, { rotation: ((nodeData.rotation ?? 0) - 90 + 360) % 360 })}
+                className="px-2 py-1 text-xs border border-gray-200 rounded bg-white hover:bg-gray-50"
+              >&#8634; -90°</button>
+              <input
+                type="number"
+                min={0}
+                max={359}
+                value={nodeData.rotation ?? 0}
+                onChange={(e) => patchNodeData(selectedNode.id, { rotation: Number(e.target.value) })}
+                className="w-16 text-xs text-center border border-gray-300 rounded-md px-1 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <button
+                onClick={() => patchNodeData(selectedNode.id, { rotation: ((nodeData.rotation ?? 0) + 90) % 360 })}
+                className="px-2 py-1 text-xs border border-gray-200 rounded bg-white hover:bg-gray-50"
+              >&#8635; +90°</button>
+            </div>
+          </div>
+
           {/* Background */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Background</label>
@@ -324,6 +376,35 @@ export function PropertiesPanel() {
                 <span className="text-xs text-gray-400">Fill color</span>
               </div>
             )}
+          </div>
+
+          {/* Layer order */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Layer order</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => {
+                  const all = getNodes()
+                  const maxZ = Math.max(0, ...all.map(n => (n.zIndex ?? 0) as number))
+                  setNodes(all.map(n => n.id === selectedNode.id ? {...n, zIndex: maxZ + 1} : n))
+                }}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors"
+                title="Bring to front"
+              >
+                ↑ Front
+              </button>
+              <button
+                onClick={() => {
+                  const all = getNodes()
+                  const minZ = Math.min(0, ...all.map(n => (n.zIndex ?? 0) as number))
+                  setNodes(all.map(n => n.id === selectedNode.id ? {...n, zIndex: minZ - 1} : n))
+                }}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors"
+                title="Send to back"
+              >
+                ↓ Back
+              </button>
+            </div>
           </div>
 
           {/* Delete */}

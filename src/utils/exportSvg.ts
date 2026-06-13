@@ -5,7 +5,7 @@ const NODE_W = 110
 const NODE_H = 100
 const PAD = 70
 
-export function exportToSvg(spec: DiagramExport, title?: string): string {
+export function exportToSvg(spec: DiagramExport): string {
   const iconMap = new Map(getAllIcons().map((i) => [i.id, i]))
   const nodeMap = new Map(spec.nodes.map((n) => [n.id, n]))
 
@@ -27,7 +27,7 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
   )
 
   const ox = Math.min(...allX) - PAD
-  const oy = Math.min(...allY) - (title ? PAD + 24 : PAD)
+  const oy = Math.min(...allY) - PAD
   const W = Math.max(...allRight) + PAD - ox
   const H = Math.max(...allBottom) + PAD - oy
 
@@ -115,14 +115,17 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
         return [bgEl, textEl].filter(Boolean).join('\n')
       }
 
+      // Icon node — use built-in map first, then fall back to embedded svgContent
       const icon = iconMap.get(node.iconId)
       const nx = node.x - ox
       const ny = node.y - oy
       const nw = node.width ?? NODE_W
       const nh = node.height ?? NODE_H
       const bgFill = node.bgColor === 'transparent' ? 'none' : (node.bgColor || 'white')
-      const innerSvg = icon
-        ? icon.svgContent
+
+      const iconSvgContent = icon?.svgContent ?? node.svgContent
+      const innerSvg = iconSvgContent
+        ? iconSvgContent
             .replace(/<svg[^>]*xmlns[^>]*>/g, '')
             .replace(/<svg[^>]*>/g, '')
             .replace(/<\/svg>/g, '')
@@ -133,7 +136,9 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
       const iconSize = Math.round(Math.min(nw, nh - 20) * 0.8)
       const iconX = Math.round((nw - iconSize) / 2)
 
-      return `  <g transform="translate(${nx},${ny})">
+      const rotation = node.rotation ?? 0
+
+      return `  <g transform="translate(${nx},${ny}) rotate(${rotation}, ${nw / 2}, ${nh / 2})">
     <rect width="${nw}" height="${nh}" rx="10" fill="${bgFill}" stroke="${bgFill === 'none' ? 'none' : '#e2e8f0'}" stroke-width="1.5"/>
     <svg x="${iconX}" y="6" viewBox="0 0 80 80" width="${iconSize}" height="${iconSize}">${innerSvg}</svg>
     <text x="${nw / 2}" y="${labelY}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="10.5" fill="#374151">${escapeXml(node.label)}</text>
@@ -141,18 +146,43 @@ export function exportToSvg(spec: DiagramExport, title?: string): string {
     })
     .join('\n')
 
-  const titleEl = title
-    ? `  <text x="${W / 2}" y="${PAD - 8}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="15" font-weight="600" fill="#1e293b">${escapeXml(title)}</text>`
-    : ''
-
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
   <rect width="${W}" height="${H}" fill="#f8fafc"/>
-${titleEl}
 ${defs}
 ${edgeEls}
 ${nodeEls}
 </svg>`
+}
+
+export async function exportToPng(svgContent: string, filename: string): Promise<void> {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(svgContent, 'image/svg+xml')
+  const svgEl = doc.documentElement
+  const w = parseFloat(svgEl.getAttribute('width') ?? '800')
+  const h = parseFloat(svgEl.getAttribute('height') ?? '600')
+  const scale = 2
+  const canvas = document.createElement('canvas')
+  canvas.width = w * scale
+  canvas.height = h * scale
+  const ctx = canvas.getContext('2d')!
+  ctx.scale(scale, scale)
+  const img = new Image()
+  const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => { ctx.drawImage(img, 0, 0); resolve() }
+    img.onerror = reject
+    img.src = url
+  })
+  URL.revokeObjectURL(url)
+  canvas.toBlob((b) => {
+    if (!b) return
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(b)
+    a.download = filename
+    a.click()
+  }, 'image/png')
 }
 
 function escapeXml(s: string): string {

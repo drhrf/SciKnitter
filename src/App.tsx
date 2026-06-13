@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import {
   Download,
+  FileImage,
   FileJson,
   FolderOpen,
   Grid3X3,
@@ -18,7 +19,7 @@ import { PropertiesPanel } from './components/PropertiesPanel'
 import { LLMWorkflowPanel } from './components/LLMWorkflowPanel'
 import { TEMPLATES, type Template } from './data/templates'
 import { parseDiagramSpec } from './utils/diagram'
-import { downloadFile, exportToSvg } from './utils/exportSvg'
+import { downloadFile, exportToSvg, exportToPng } from './utils/exportSvg'
 import type { DiagramExport, Icon } from './types'
 
 function slugify(s: string) {
@@ -51,7 +52,13 @@ export function App() {
   function handleExportSvg() {
     const spec = canvasRef.current?.getSpec(diagramTitle)
     if (!spec) return
-    downloadFile(exportToSvg(spec, diagramTitle), `${slugify(diagramTitle)}.svg`, 'image/svg+xml')
+    downloadFile(exportToSvg(spec), `${slugify(diagramTitle)}.svg`, 'image/svg+xml')
+  }
+
+  async function handleExportPng() {
+    const spec = canvasRef.current?.getSpec(diagramTitle)
+    if (!spec) return
+    await exportToPng(exportToSvg(spec), `${slugify(diagramTitle)}.png`)
   }
 
   function handleSaveJson() {
@@ -234,6 +241,16 @@ export function App() {
         >
           <Download className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Export SVG</span>
+        </button>
+
+        {/* Export PNG */}
+        <button
+          onClick={handleExportPng}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
+          title="Export as PNG (2x)"
+        >
+          <FileImage className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Export PNG</span>
         </button>
 
         {/* Save JSON */}

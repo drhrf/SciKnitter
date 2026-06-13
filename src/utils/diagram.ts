@@ -46,10 +46,11 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
     const icon = iconLookup.get(n.iconId)
     const data: IconNodeData = {
       iconId: n.iconId,
-      svgContent: icon?.svgContent ?? fallbackSvg(n.iconId),
+      svgContent: icon?.svgContent ?? n.svgContent ?? fallbackSvg(n.iconId),
       label: n.label,
       category: icon?.category ?? 'Unknown',
       bgColor: n.bgColor ?? '',
+      rotation: n.rotation,
     }
     return {
       id: n.id,
@@ -102,6 +103,7 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
         }
       }
       const d = n.data as IconNodeData
+      const isBuiltIn = getAllIcons().some((i) => i.id === d.iconId)
       return {
         id: n.id,
         iconId: d.iconId,
@@ -111,6 +113,8 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
         width: n.width ? Math.round(n.width) : undefined,
         height: n.height ? Math.round(n.height) : undefined,
         bgColor: d.bgColor || undefined,
+        rotation: d.rotation !== undefined ? d.rotation : undefined,
+        svgContent: !isBuiltIn ? d.svgContent : undefined,
       }
     }),
     edges: edges.map((e) => {
@@ -126,17 +130,40 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
   }
 }
 
+function getCachedServierIcons(): Array<{ id: string; name: string; category: string }> {
+  try {
+    const raw = localStorage.getItem('sciknitter:servier:v2')
+    if (!raw) return []
+    const data = JSON.parse(raw) as { icons: Array<{ id: string; name: string; category: string }> }
+    if (!Array.isArray(data?.icons)) return []
+    return data.icons
+  } catch {
+    return []
+  }
+}
+
 export function generateLLMPrompt(description: string): string {
   const icons = getAllIcons()
   const lines = icons
     .map((i) => `  • ${i.id}  "${i.name}"  [${i.tags.slice(0, 5).join(', ')}]`)
     .join('\n')
 
+  const servierIcons = getCachedServierIcons()
+  const servierSection = servierIcons.length > 0
+    ? `\nSERVIER MEDICAL ART ICONS (${servierIcons.length} available — use only ids listed here)\n${'='.repeat(58)}\n${
+        servierIcons
+          .slice(0, 300)
+          .map((i) => `  • ${i.id}  "${i.name}"  [${i.category}]`)
+          .join('\n')
+      }`
+    : '\n(Servier icons not loaded — open the Servier tab in the icon browser first)'
+
   return `You are a scientific diagram layout assistant for SciKnitter.
 
 AVAILABLE ICONS
 ===============
 ${lines}
+${servierSection}
 
 TASK
 ====

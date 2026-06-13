@@ -52,16 +52,19 @@ export function IconNode({ id, data, selected }: NodeProps) {
       <Handle id="right" type="source" position={Position.Right} className={handleStyle} />
 
       <div
-        className={`relative flex flex-col items-center w-full h-full rounded-xl transition-shadow cursor-default ${
-          selected
-            ? 'shadow-[0_0_0_2px_#3b82f6,0_4px_12px_rgba(0,0,0,0.12)]'
-            : 'shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.14)]'
-        }`}
+        className="relative flex flex-col items-center w-full h-full rounded-xl cursor-default"
         style={{
           padding: '8px 6px 4px',
           boxSizing: 'border-box',
           background: nodeData.bgColor === 'transparent' ? 'transparent' : (nodeData.bgColor || 'white'),
           borderRadius: 12,
+          boxShadow: nodeData.bgColor === 'transparent'
+            ? 'none'
+            : selected
+              ? '0 0 0 2px #3b82f6, 0 4px 12px rgba(0,0,0,0.12)'
+              : '0 2px 8px rgba(0,0,0,0.08)',
+          outline: (nodeData.bgColor === 'transparent' && selected) ? '2px dashed #3b82f6' : 'none',
+          outlineOffset: 3,
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -80,6 +83,7 @@ export function IconNode({ id, data, selected }: NodeProps) {
         {/* SVG icon — fills available space and scales with node size */}
         <div
           className="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden pointer-events-none [&>svg]:w-full [&>svg]:h-full"
+          style={{ transform: `rotate(${nodeData.rotation ?? 0}deg)`, transition: 'transform 0.15s' }}
           dangerouslySetInnerHTML={{ __html: nodeData.svgContent }}
         />
 

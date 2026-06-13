@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Search, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { AlertCircle, FolderOpen, Loader2, Plus, RotateCcw, Search, X } from 'lucide-react'
 import { useIconSearch } from '../hooks/useIconSearch'
 import { getAllIcons, getCategories } from '../data/iconsIndex'
 import { ExternalIconSearch } from './ExternalIconSearch'
+import { clearBioartCache, fetchBioartIndex, fetchBioartSvg, type BioartIcon } from '../services/bioartIcons'
 import type { Icon } from '../types'
 
 type Tab = 'library' | 'servier' | 'nihbioart'
@@ -102,25 +103,251 @@ function LibraryTab({ onAddIcon }: IconBrowserProps) {
   )
 }
 
-// ── NIH Bioart stub ────────────────────────────────────────────────────────
+// ── NIH Bioart tab ────────────────────────────────────────────────────────
 
-function NIHBioartTab() {
-  return (
-    <div className="flex flex-col items-center px-4 py-10 gap-3 text-center">
-      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl">
-        🔬
+type BioartLoadState = 'idle' | 'loading' | 'empty' | 'ready' | 'error'
+
+function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
+  const [loadState, setLoadState] = useState<BioartLoadState>('idle')
+  const [icons, setIcons] = useState<BioartIcon[]>([])
+  const [error, setError] = useState('')
+  const [query, setQuery] = useState('')
+  const [selectedCat, setSelectedCat] = useState('All')
+  const [addingId, setAddingId] = useState<string | null>(null)
+
+  async function handleLoad(forceRefresh = false) {
+    if (forceRefresh) clearBioartCache()
+    setLoadState('loading')
+    setError('')
+    try {
+      const result = await fetchBioartIndex()
+      setIcons(result)
+      setLoadState('ready')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      if (msg.includes('No bioart icons')) {
+        setLoadState('empty')
+      } else {
+        setError(msg)
+        setLoadState('error')
+      }
+    }
+  }
+
+  const categories = useMemo(() => {
+    if (!icons.length) return ['All']
+    const cats = [...new Set(icons.map((i) => i.category))].sort()
+    return ['All', ...cats]
+  }, [icons])
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim()
+    return icons
+      .filter((i) => {
+        if (selectedCat !== 'All' && i.category !== selectedCat) return false
+        if (!q) return true
+        return i.name.toLowerCase().includes(q) || i.tags.some((t) => t.includes(q))
+      })
+      .slice(0, 120)
+  }, [icons, query, selectedCat])
+
+  async function handleAdd(icon: BioartIcon) {
+    if (addingId) return
+    setAddingId(icon.id)
+    try {
+      const svgContent = await fetchBioartSvg(icon)
+      const internalIcon: Icon = {
+        id: icon.id,
+        name: icon.name,
+        category: `NIH Bioart · ${icon.category}`,
+        tags: icon.tags,
+        source: 'bioart',
+        svgContent,
+      }
+      onAddIcon(internalIcon)
+    } catch {
+      // silently ignore
+    } finally {
+      setAddingId(null)
+    }
+  }
+
+  // ── Idle / Error ───────────────────────────────────────────────────────
+  if (loadState === 'idle' || loadState === 'error') {
+    return (
+      <div className="flex flex-col items-center px-4 py-8 gap-4 text-center">
+        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
+          <FolderOpen className="w-5 h-5 text-green-400" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-gray-700">NIH Bioart</p>
+          <p className="text-[10px] text-gray-400 leading-relaxed">
+            Local bioart icons served from{' '}
+            <span className="font-medium text-gray-500">public/bioart-icons/</span>.
+          </p>
+        </div>
+
+        {error && (
+          <div className="w-full flex items-start gap-2 text-[10px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-left">
+            <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <button
+          onClick={() => handleLoad(false)}
+          className="flex items-center gap-1.5 px-4 py-2 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition-colors"
+        >
+          <FolderOpen className="w-3.5 h-3.5" />
+          {error ? 'Retry' : 'Load NIH Bioart Icons'}
+        </button>
       </div>
-      <p className="text-xs font-medium text-gray-700">NIH Bioart</p>
-      <p className="text-[10px] text-gray-400 leading-relaxed">
-        NIH Bioart illustrations are not yet available via a public API.
-        <br />
-        This tab is reserved for future integration.
-      </p>
-      <p className="text-[10px] text-gray-300">
-        Visit{' '}
-        <span className="font-medium text-gray-400">bioart.niaid.nih.gov</span>
-        {' '}to download icons manually.
-      </p>
+    )
+  }
+
+  // ── Empty manifest ─────────────────────────────────────────────────────
+  if (loadState === 'empty') {
+    return (
+      <div className="flex flex-col items-center px-4 py-8 gap-3 text-center">
+        <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center">
+          <FolderOpen className="w-5 h-5 text-yellow-400" />
+        </div>
+        <p className="text-xs font-medium text-gray-700">No icons found</p>
+        <p className="text-[10px] text-gray-500 leading-relaxed text-left bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+          To add NIH Bioart icons:
+          <br />
+          1. Copy SVG files to <span className="font-mono text-gray-700">public/bioart-icons/</span>
+          <br />
+          2. Update <span className="font-mono text-gray-700">public/bioart-icons/manifest.json</span> with entries:
+          <br />
+          <span className="font-mono text-[9px] text-gray-600">
+            {`{"icons":[{"id":"bioart:B001","name":"Cell","category":"Cell Biology","tags":[],"path":"/bioart-icons/B001.svg"}]}`}
+          </span>
+        </p>
+        <button
+          onClick={() => handleLoad(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Refresh
+        </button>
+      </div>
+    )
+  }
+
+  // ── Loading ────────────────────────────────────────────────────────────
+  if (loadState === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <Loader2 className="w-7 h-7 text-green-400 animate-spin" />
+        <p className="text-xs text-gray-400">Loading bioart icons…</p>
+      </div>
+    )
+  }
+
+  // ── Ready ──────────────────────────────────────────────────────────────
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Search + refresh */}
+      <div className="px-3 pt-2 pb-1 space-y-1.5 border-b border-gray-200">
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${icons.length.toLocaleString()} icons…`}
+            className="flex-1 px-2.5 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-400"
+          />
+          <button
+            onClick={() => handleLoad(true)}
+            title="Refresh icon index"
+            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Category pills */}
+        <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-hide">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCat(cat)}
+              className={`whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                selectedCat === cat
+                  ? 'bg-green-500 text-white'
+                  : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {!query && (
+          <p className="text-[9px] text-gray-300 text-center">
+            Showing first 120 · search to filter
+          </p>
+        )}
+      </div>
+
+      {/* Grid */}
+      <div className="flex-1 overflow-y-auto p-2">
+        {filtered.length === 0 ? (
+          <p className="text-center text-xs text-gray-400 mt-8">
+            No icons match "{query}"
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5">
+            {filtered.map((icon) => {
+              const isAdding = addingId === icon.id
+              return (
+                <div
+                  key={icon.id}
+                  onClick={() => handleAdd(icon)}
+                  className={`relative flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 transition-all group select-none ${
+                    isAdding
+                      ? 'opacity-60 cursor-wait'
+                      : 'cursor-pointer hover:border-green-400 hover:shadow-sm'
+                  }`}
+                  title={`${icon.name} — ${icon.category}\nClick to add to canvas`}
+                >
+                  {isAdding ? (
+                    <div className="w-12 h-12 flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
+                    </div>
+                  ) : (
+                    <img
+                      src={icon.path}
+                      alt={icon.name}
+                      className="w-12 h-12 object-contain"
+                      loading="lazy"
+                    />
+                  )}
+                  <span className="mt-1 text-[10px] text-center text-gray-600 leading-tight line-clamp-2 group-hover:text-green-600">
+                    {icon.name}
+                  </span>
+
+                  {!isAdding && (
+                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <Plus className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-3 py-1.5 border-t border-gray-100 text-center">
+        <p className="text-[9px] text-gray-300">
+          NIH Bioart · Click icon to add
+        </p>
+      </div>
     </div>
   )
 }
@@ -184,7 +411,7 @@ export function IconBrowser({ onAddIcon }: IconBrowserProps) {
       <div className="flex-1 overflow-hidden flex flex-col">
         {activeTab === 'library' && <LibraryTab onAddIcon={onAddIcon} />}
         {activeTab === 'servier' && <ExternalIconSearch onAddIcon={onAddIcon} />}
-        {activeTab === 'nihbioart' && <NIHBioartTab />}
+        {activeTab === 'nihbioart' && <NIHBioartTab onAddIcon={onAddIcon} />}
       </div>
     </aside>
   )
