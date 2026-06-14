@@ -96,7 +96,7 @@ export function exportToSvg(spec: DiagramExport): string {
         const textX =
           textAlign === 'center' ? nx + nw / 2 : textAlign === 'right' ? nx + nw - 8 : nx + 8
 
-        const lines = node.text.split('\n')
+        const lines = wrapTextForSvg(node.text, nw, fontSize)
         const lineH = fontSize * 1.5
         const tspans = lines
           .map((line, idx) => {
@@ -179,6 +179,32 @@ export async function exportToPng(svgContent: string, filename: string): Promise
     a.download = filename
     a.click()
   }, 'image/png')
+}
+
+function wrapTextForSvg(text: string, boxWidth: number, fontSize: number): string[] {
+  // SVG has no automatic word-wrap. Approximate character width for sans-serif,
+  // then split each paragraph on word boundaries to match CSS word-wrap behaviour.
+  const charWidth = fontSize * 0.56
+  const maxChars = Math.max(1, Math.floor((boxWidth - 16) / charWidth))
+  const result: string[] = []
+
+  for (const paragraph of text.split('\n')) {
+    if (!paragraph) { result.push(''); continue }
+    const words = paragraph.split(/\s+/)
+    let line = ''
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word
+      if (candidate.length <= maxChars || !line) {
+        line = candidate
+      } else {
+        result.push(line)
+        line = word
+      }
+    }
+    if (line) result.push(line)
+  }
+
+  return result.length > 0 ? result : ['']
 }
 
 function stripSvgWrapper(svgContent: string): { inner: string; viewBox: string } {
