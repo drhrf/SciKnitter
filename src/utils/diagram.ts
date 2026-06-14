@@ -147,27 +147,41 @@ function getCachedServierIcons(): Array<{ id: string; name: string; category: st
 }
 
 export function generateLLMPrompt(description: string): string {
-  const icons = getAllIcons()
-  const lines = icons
-    .map((i) => `  • ${i.id}  "${i.name}"  [${i.tags.slice(0, 5).join(', ')}]`)
-    .join('\n')
+  const allBuiltIn = getAllIcons()
+  const shapeIcons = allBuiltIn.filter((i) => i.category === 'Shapes')
+  const scientificIcons = allBuiltIn.filter((i) => i.category !== 'Shapes')
 
   const servierIcons = getCachedServierIcons()
+
   const servierSection = servierIcons.length > 0
-    ? `\nSERVIER MEDICAL ART ICONS (${servierIcons.length} available — use only ids listed here)\n${'='.repeat(58)}\n${
-        servierIcons
-          .slice(0, 300)
-          .map((i) => `  • ${i.id}  "${i.name}"  [${i.category}]`)
-          .join('\n')
-      }`
-    : '\n(Servier icons not loaded — open the Servier tab in the icon browser first)'
+    ? `SERVIER MEDICAL ART ICONS — PRIMARY SOURCE (${servierIcons.length} total; top 600 shown)
+${'='.repeat(62)}
+${servierIcons
+    .slice(0, 600)
+    .map((i) => `  • ${i.id}  "${i.name}"  [${i.category}]`)
+    .join('\n')}`
+    : `⚠️  SERVIER ICONS NOT LOADED
+${'='.repeat(62)}
+Open the "Servier" tab in the icon browser first, then regenerate this prompt.
+Until then, only the built-in icons below are available.`
+
+  const builtInSection = `BUILT-IN SCIENTIFIC ICONS (fallback; prefer Servier above)
+${'='.repeat(62)}
+${scientificIcons
+    .map((i) => `  • ${i.id}  "${i.name}"  [${i.tags.slice(0, 4).join(', ')}]`)
+    .join('\n')}
+
+SHAPES (use as containers, backgrounds, or layout elements)
+${'='.repeat(62)}
+${shapeIcons
+    .map((i) => `  • ${i.id}  "${i.name}"`)
+    .join('\n')}`
 
   return `You are a scientific diagram layout assistant for SciKnitter.
 
-AVAILABLE ICONS
-===============
-${lines}
 ${servierSection}
+
+${builtInSection}
 
 TASK
 ====
@@ -176,10 +190,12 @@ Create a diagram layout for:
 
 RULES
 =====
-- Only use iconId values that exactly match ids from the list above
+- ALWAYS prefer Servier Medical Art icons for biological and scientific elements
+- Only use iconId values that exactly match ids from the lists above
 - Position nodes at x: 50–900, y: 50–700
-- Space nodes at least 150 px apart
+- Space nodes at least 150 px apart — do NOT overlap nodes
 - For pathways, lay out left-to-right or top-to-bottom
+- Use shape icons (shape-rect, shape-circle, etc.) as background containers or grouping boxes, not as scientific elements
 - Edge styles:
     "arrow"  = activation / positive regulation / flow
     "blunt"  = inhibition / negative regulation
