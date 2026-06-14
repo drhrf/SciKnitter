@@ -12,12 +12,11 @@ import type {
 
 const iconLookup = new Map(getAllIcons().map((i) => [i.id, i]))
 
-function fallbackSvg(iconId: string): string {
-  const parts = iconId.split('-')
-  const label = parts[parts.length - 1] ?? '?'
+function fallbackSvg(): string {
   return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-    <rect x="10" y="10" width="60" height="60" rx="8" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" stroke-dasharray="4,3"/>
-    <text x="40" y="44" text-anchor="middle" font-size="9" fill="#6b7280" font-family="sans-serif">${label}</text>
+    <rect x="10" y="10" width="60" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <line x1="26" y1="40" x2="54" y2="40" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+    <line x1="40" y1="26" x2="40" y2="54" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
   </svg>`
 }
 
@@ -51,7 +50,7 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
     const icon = iconLookup.get(n.iconId)
     const data: IconNodeData = {
       iconId: n.iconId,
-      svgContent: icon?.svgContent ?? n.svgContent ?? fallbackSvg(n.iconId),
+      svgContent: icon?.svgContent ?? n.svgContent ?? fallbackSvg(),
       label: n.label,
       category: icon?.category ?? 'Unknown',
       bgColor: n.bgColor ?? 'transparent',
