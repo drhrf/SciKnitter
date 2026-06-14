@@ -28,6 +28,7 @@ export interface TextNodeData {
   bgColor: string
   borderColor: string
   textAlign: 'left' | 'center' | 'right'
+  rotation?: number
   [key: string]: unknown
 }
 
@@ -91,6 +92,7 @@ export type DiagramNodeExport =
       borderColor?: string
       textAlign?: 'left' | 'center' | 'right'
       zIndex?: number
+      rotation?: number
     }
 
 /** Portable diagram format — used for save/load, SVG export, and LLM round-trips */
