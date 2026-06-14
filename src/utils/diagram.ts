@@ -50,7 +50,7 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
       svgContent: icon?.svgContent ?? n.svgContent ?? fallbackSvg(n.iconId),
       label: n.label,
       category: icon?.category ?? 'Unknown',
-      bgColor: n.bgColor ?? '',
+      bgColor: n.bgColor ?? 'transparent',
       rotation: n.rotation,
       shapeStrokeColor: n.shapeStrokeColor,
       shapeStrokeWidth: n.shapeStrokeWidth,

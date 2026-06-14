@@ -33,7 +33,7 @@ export function IconNode({ id, data, selected }: NodeProps) {
     )
   }, [id, labelValue, setNodes])
 
-  const handleStyle = 'w-2.5 h-2.5 !bg-blue-400 !border-2 !border-white'
+  const handleStyle = 'w-4 h-4 !bg-blue-400 !border-2 !border-white !rounded-full shadow'
 
   return (
     <>
@@ -41,7 +41,7 @@ export function IconNode({ id, data, selected }: NodeProps) {
         isVisible={selected}
         minWidth={60}
         minHeight={60}
-        handleStyle={{ width: 8, height: 8, borderRadius: 2, background: '#3b82f6', border: '2px solid white' }}
+        handleStyle={{ width: 12, height: 12, borderRadius: 3, background: '#3b82f6', border: '2px solid white' }}
         lineStyle={{ borderColor: '#3b82f6', borderWidth: 1 }}
       />
 
