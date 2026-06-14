@@ -149,6 +149,31 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
               }),
             )
           }
+
+          // Async-resolve SVG content for BioArt icons
+          const bioartNodes = rfNodes.filter((n) =>
+            (n.data as IconNodeData).iconId?.startsWith('bioart:'),
+          )
+          if (bioartNodes.length > 0) {
+            Promise.all(
+              bioartNodes.map(async (n) => {
+                const iconId = (n.data as IconNodeData).iconId
+                const filename = iconId.replace('bioart:', '')
+                try {
+                  const res = await fetch(`${import.meta.env.BASE_URL}bioart-icons/${filename}.svg`)
+                  if (!res.ok) return
+                  const svgContent = await res.text()
+                  setNodes((nds) =>
+                    nds.map((nd) =>
+                      nd.id === n.id
+                        ? { ...nd, data: { ...nd.data, svgContent } }
+                        : nd,
+                    ),
+                  )
+                } catch { /* ignore */ }
+              }),
+            )
+          }
         },
         clearAll: () => {
           setNodes([])

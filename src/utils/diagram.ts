@@ -35,13 +35,16 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
         textAlign: n.textAlign ?? 'left',
         rotation: n.rotation,
       }
+      // Text nodes with a background color are panel backgrounds — keep them
+      // behind edges by defaulting to zIndex: -1 when not explicitly set.
+      const zIndex = n.zIndex !== undefined ? n.zIndex : (n.bgColor ? -1 : undefined)
       return {
         id: n.id,
         type: 'textNode',
         position: { x: n.x, y: n.y },
         width: n.width ?? 200,
         height: n.height ?? 60,
-        zIndex: n.zIndex,
+        zIndex,
         data,
       }
     }
@@ -354,7 +357,9 @@ export function parseDiagramSpec(raw: string): DiagramExport {
             ? (node.textAlign as 'left' | 'center' | 'right')
             : 'left',
           rotation: typeof node.rotation === 'number' ? node.rotation : undefined,
-          zIndex: typeof node.zIndex === 'number' ? node.zIndex : undefined,
+          // Default panel backgrounds (text nodes with bgColor) to zIndex: -1
+          zIndex: typeof node.zIndex === 'number' ? node.zIndex
+            : (node.bgColor ? -1 : undefined),
         }
       }
 
