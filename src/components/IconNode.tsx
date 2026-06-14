@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Handle, NodeResizer, Position, useReactFlow, type NodeProps } from '@xyflow/react'
 import { X } from 'lucide-react'
 import type { IconNodeData } from '../types'
+import { applyShapeStyle, isShapeNode } from '../utils/shapeStyle'
 
 export function IconNode({ id, data, selected }: NodeProps) {
   const nodeData = data as IconNodeData
@@ -84,7 +85,11 @@ export function IconNode({ id, data, selected }: NodeProps) {
         <div
           className="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden pointer-events-none [&>svg]:w-full [&>svg]:h-full"
           style={{ transform: `rotate(${nodeData.rotation ?? 0}deg)`, transition: 'transform 0.15s' }}
-          dangerouslySetInnerHTML={{ __html: nodeData.svgContent }}
+          dangerouslySetInnerHTML={{
+            __html: isShapeNode(nodeData.iconId)
+              ? applyShapeStyle(nodeData.svgContent, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth)
+              : nodeData.svgContent,
+          }}
         />
 
         {/* Label */}

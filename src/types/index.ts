@@ -14,6 +14,8 @@ export interface IconNodeData {
   category: string
   bgColor?: string
   rotation?: number
+  shapeStrokeColor?: string
+  shapeStrokeWidth?: number
   [key: string]: unknown
 }
 
@@ -67,6 +69,8 @@ export type DiagramNodeExport =
       bgColor?: string
       rotation?: number
       svgContent?: string
+      shapeStrokeColor?: string
+      shapeStrokeWidth?: number
     }
   | {
       nodeType: 'text'

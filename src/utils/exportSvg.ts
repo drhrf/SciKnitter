@@ -1,5 +1,6 @@
 import { getAllIcons } from '../data/iconsIndex'
 import type { DiagramExport } from '../types'
+import { applyShapeStyle, isShapeNode } from './shapeStyle'
 
 const NODE_W = 110
 const NODE_H = 100
@@ -123,7 +124,10 @@ export function exportToSvg(spec: DiagramExport): string {
       const nh = node.height ?? NODE_H
       const bgFill = node.bgColor === 'transparent' ? 'none' : (node.bgColor || 'white')
 
-      const rawSvg = icon?.svgContent ?? node.svgContent
+      const baseSvg = icon?.svgContent ?? node.svgContent
+      const rawSvg = isShapeNode(node.iconId)
+        ? applyShapeStyle(baseSvg ?? '', node.shapeStrokeColor, node.shapeStrokeWidth)
+        : baseSvg
       const { inner: innerSvg, viewBox } = rawSvg
         ? stripSvgWrapper(rawSvg)
         : { inner: `<rect x="10" y="10" width="60" height="60" rx="6" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5"/>`, viewBox: '0 0 80 80' }

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import type { EdgeStyle, IconNodeData, TextNodeData } from '../types'
 import { trimSvgWhitespace } from '../utils/cropSvg'
+import { applyShapeStyle, isShapeNode } from '../utils/shapeStyle'
 
 const EDGE_STYLES: { value: EdgeStyle; label: string; description: string }[] = [
   { value: 'arrow', label: '→ Arrow', description: 'Activation / positive regulation' },
@@ -325,6 +326,9 @@ export function PropertiesPanel() {
   // ── Icon node ──────────────────────────────────────────────────────────────
   if (selectedNode) {
     const nodeData = selectedNode.data as IconNodeData
+    const previewSvg = isShapeNode(nodeData.iconId)
+      ? applyShapeStyle(nodeData.svgContent, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth)
+      : nodeData.svgContent
     return (
       <aside className="w-52 min-w-[13rem] border-l border-gray-200 bg-gray-50 flex flex-col">
         <div className="p-4 space-y-4">
@@ -334,7 +338,7 @@ export function PropertiesPanel() {
           <div className="flex justify-center">
             <div
               className="w-16 h-16"
-              dangerouslySetInnerHTML={{ __html: nodeData.svgContent }}
+              dangerouslySetInnerHTML={{ __html: previewSvg }}
             />
           </div>
 
@@ -398,6 +402,40 @@ export function PropertiesPanel() {
             {trimming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Crop className="w-3.5 h-3.5" />}
             {trimming ? 'Trimming…' : 'Trim whitespace'}
           </button>
+
+          {/* Shape Style — only for shape nodes */}
+          {isShapeNode(nodeData.iconId) && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Shape Style</label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={nodeData.shapeStrokeColor || '#374151'}
+                    onChange={(e) => patchNodeData(selectedNode.id, { shapeStrokeColor: e.target.value })}
+                    className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
+                  />
+                  <span className="text-xs text-gray-500">Line color</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0.5}
+                    max={20}
+                    step={0.5}
+                    defaultValue={nodeData.shapeStrokeWidth ?? 3}
+                    key={`stroke-w-${selectedNode.id}`}
+                    onBlur={(e) =>
+                      patchNodeData(selectedNode.id, { shapeStrokeWidth: Math.max(0.5, Number(e.target.value)) })
+                    }
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+                    className="w-14 text-xs border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  <span className="text-xs text-gray-400">px thick</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Background */}
           <div>

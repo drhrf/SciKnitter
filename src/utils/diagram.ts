@@ -51,6 +51,8 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
       category: icon?.category ?? 'Unknown',
       bgColor: n.bgColor ?? '',
       rotation: n.rotation,
+      shapeStrokeColor: n.shapeStrokeColor,
+      shapeStrokeWidth: n.shapeStrokeWidth,
     }
     return {
       id: n.id,
@@ -115,6 +117,8 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
         bgColor: d.bgColor || undefined,
         rotation: d.rotation !== undefined ? d.rotation : undefined,
         svgContent: !isBuiltIn ? d.svgContent : undefined,
+        shapeStrokeColor: d.shapeStrokeColor,
+        shapeStrokeWidth: d.shapeStrokeWidth,
       }
     }),
     edges: edges.map((e) => {
