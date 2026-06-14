@@ -7,10 +7,13 @@ import {
   FolderOpen,
   Grid3X3,
   Hand,
+  LayoutGrid,
   LayoutTemplate,
   MousePointer2,
+  Redo2,
   Trash2,
   Type,
+  Undo2,
   Wand2,
 } from 'lucide-react'
 import { IconBrowser } from './components/IconBrowser'
@@ -36,12 +39,18 @@ export function App() {
   const [showTemplates, setShowTemplates] = useState(false)
   const [diagramTitle, setDiagramTitle] = useState('Untitled Diagram')
 
-  // Keyboard shortcuts: V = select, H/Escape = pan
+  // Keyboard shortcuts: V = select, H/Escape = pan, Ctrl+Z = undo, Ctrl+Y/Ctrl+Shift+Z = redo
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       if (e.key === 'v' || e.key === 'V') setIsSelecting(true)
       if (e.key === 'h' || e.key === 'H' || e.key === 'Escape') setIsSelecting(false)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault(); canvasRef.current?.undo()
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault(); canvasRef.current?.redo()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -164,6 +173,28 @@ export function App() {
             <span className="hidden sm:inline">Select</span>
           </button>
         </div>
+
+        <div className="h-5 w-px bg-gray-200" />
+
+        {/* Undo / Redo */}
+        <button onClick={() => canvasRef.current?.undo()} title="Undo (Cmd+Z)"
+          className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-md bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 transition-colors">
+          <Undo2 className="w-3.5 h-3.5" />
+        </button>
+        <button onClick={() => canvasRef.current?.redo()} title="Redo (Cmd+Shift+Z)"
+          className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-md bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 transition-colors">
+          <Redo2 className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Spread layout */}
+        <button
+          onClick={() => canvasRef.current?.autoLayout()}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
+          title="Remove overlapping nodes"
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          <span className="hidden lg:inline">Spread</span>
+        </button>
 
         <div className="h-5 w-px bg-gray-200" />
 

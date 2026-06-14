@@ -422,6 +422,47 @@ const ICONS: Icon[] = [
       <ellipse cx="58" cy="40" rx="6" ry="8" fill="#93c5fd" stroke="#2563eb" stroke-width="1"/>
     </svg>`,
   },
+
+  // ── Shapes ───────────────────────────────────────────────────────────────
+  // Rectangle outline
+  { id: 'shape-rect', name: 'Rectangle', category: 'Shapes', tags: ['rectangle', 'box', 'outline', 'shape', 'background'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="72" height="72" fill="none" stroke="#374151" stroke-width="3"/></svg>` },
+
+  // Rounded rectangle
+  { id: 'shape-rect-rounded', name: 'Rounded Rectangle', category: 'Shapes', tags: ['rectangle', 'rounded', 'box', 'shape', 'background'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="72" height="72" rx="12" fill="none" stroke="#374151" stroke-width="3"/></svg>` },
+
+  // Circle
+  { id: 'shape-circle', name: 'Circle', category: 'Shapes', tags: ['circle', 'ellipse', 'round', 'shape', 'background'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="40" rx="36" ry="36" fill="none" stroke="#374151" stroke-width="3"/></svg>` },
+
+  // Triangle
+  { id: 'shape-triangle', name: 'Triangle', category: 'Shapes', tags: ['triangle', 'shape'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,4 76,76 4,76" fill="none" stroke="#374151" stroke-width="3" stroke-linejoin="round"/></svg>` },
+
+  // Diamond
+  { id: 'shape-diamond', name: 'Diamond', category: 'Shapes', tags: ['diamond', 'rhombus', 'shape', 'decision'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,4 76,40 40,76 4,40" fill="none" stroke="#374151" stroke-width="3" stroke-linejoin="round"/></svg>` },
+
+  // Hexagon
+  { id: 'shape-hexagon', name: 'Hexagon', category: 'Shapes', tags: ['hexagon', 'hex', 'shape'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,4 72,22 72,58 40,76 8,58 8,22" fill="none" stroke="#374151" stroke-width="3" stroke-linejoin="round"/></svg>` },
+
+  // Arrow right
+  { id: 'shape-arrow-right', name: 'Arrow', category: 'Shapes', tags: ['arrow', 'direction', 'flow', 'shape'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path d="M4 30 L52 30 L52 18 L76 40 L52 62 L52 50 L4 50 Z" fill="#374151" stroke="none"/></svg>` },
+
+  // Cylinder (database)
+  { id: 'shape-cylinder', name: 'Cylinder', category: 'Shapes', tags: ['cylinder', 'database', 'storage', 'shape'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="16" rx="30" ry="10" fill="none" stroke="#374151" stroke-width="2.5"/><line x1="10" y1="16" x2="10" y2="64" stroke="#374151" stroke-width="2.5"/><line x1="70" y1="16" x2="70" y2="64" stroke="#374151" stroke-width="2.5"/><path d="M10 64 Q40 78 70 64" fill="none" stroke="#374151" stroke-width="2.5"/></svg>` },
+
+  // Cloud
+  { id: 'shape-cloud', name: 'Cloud', category: 'Shapes', tags: ['cloud', 'network', 'internet', 'shape'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path d="M62 54 C68 54 74 48 74 41 C74 34 68 28 61 28 C60 21 54 16 46 16 C38 16 31 22 30 30 C24 31 18 37 18 44 C18 51 24 56 31 56 Z" fill="none" stroke="#374151" stroke-width="2.5" stroke-linejoin="round"/></svg>` },
+
+  // Bracket / Group box
+  { id: 'shape-bracket', name: 'Bracket', category: 'Shapes', tags: ['bracket', 'group', 'frame', 'shape'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path d="M20 8 L8 8 L8 72 L20 72" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M60 8 L72 8 L72 72 L60 72" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
 ]
 
 export function getAllIcons(): Icon[] {

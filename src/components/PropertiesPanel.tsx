@@ -1,13 +1,17 @@
+import { useState } from 'react'
 import { useReactFlow, useStore } from '@xyflow/react'
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
   Bold,
+  Crop,
   Italic,
+  Loader2,
   Trash2,
 } from 'lucide-react'
 import type { EdgeStyle, IconNodeData, TextNodeData } from '../types'
+import { trimSvgWhitespace } from '../utils/cropSvg'
 
 const EDGE_STYLES: { value: EdgeStyle; label: string; description: string }[] = [
   { value: 'arrow', label: '→ Arrow', description: 'Activation / positive regulation' },
@@ -18,6 +22,7 @@ const EDGE_STYLES: { value: EdgeStyle; label: string; description: string }[] = 
 
 export function PropertiesPanel() {
   const { setNodes, setEdges, deleteElements, getNodes } = useReactFlow()
+  const [trimming, setTrimming] = useState(false)
 
   const selectedNodes = useStore((s) => s.nodes.filter((n) => n.selected))
   const selectedEdges = useStore((s) => s.edges.filter((e) => e.selected))
@@ -50,6 +55,31 @@ export function PropertiesPanel() {
             <kbd className="px-1 py-0.5 bg-gray-100 rounded text-[9px] font-mono">Delete</kbd> to
             remove all.
           </p>
+          {selectedNodes.length > 0 && selectedNodes.every(n => n.type === 'iconNode') && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Background</label>
+              <div className="flex items-center gap-2">
+                <input type="checkbox"
+                  checked={selectedNodes.every(n => (n.data as IconNodeData).bgColor === 'transparent')}
+                  onChange={(e) => selectedNodes.forEach(n =>
+                    patchNodeData(n.id, { bgColor: e.target.checked ? 'transparent' : '' })
+                  )}
+                  className="rounded" />
+                <span className="text-xs text-gray-500">Transparent</span>
+              </div>
+              {!selectedNodes.every(n => (n.data as IconNodeData).bgColor === 'transparent') && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <input type="color"
+                    value={(selectedNodes[0].data as IconNodeData).bgColor || '#ffffff'}
+                    onChange={(e) => selectedNodes.forEach(n =>
+                      patchNodeData(n.id, { bgColor: e.target.value })
+                    )}
+                    className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5" />
+                  <span className="text-xs text-gray-400">Apply to all</span>
+                </div>
+              )}
+            </div>
+          )}
           <button
             onClick={() =>
               deleteElements({
@@ -350,6 +380,24 @@ export function PropertiesPanel() {
               >&#8635; +90°</button>
             </div>
           </div>
+
+          {/* Trim whitespace */}
+          <button
+            disabled={trimming}
+            onClick={async () => {
+              setTrimming(true)
+              try {
+                const newSvg = await trimSvgWhitespace(nodeData.svgContent)
+                patchNodeData(selectedNode.id, { svgContent: newSvg })
+              } finally {
+                setTrimming(false)
+              }
+            }}
+            className="w-full flex items-center justify-center gap-1.5 text-xs border border-gray-200 rounded-md py-1.5 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            {trimming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Crop className="w-3.5 h-3.5" />}
+            {trimming ? 'Trimming…' : 'Trim whitespace'}
+          </button>
 
           {/* Background */}
           <div>
