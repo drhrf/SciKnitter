@@ -79,6 +79,7 @@ function createRFNode(icon: Icon, position: { x: number; y: number }): Node {
     position,
     width: 110,
     height: 100,
+    zIndex: 2,
     data,
   }
 }

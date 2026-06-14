@@ -20,6 +20,12 @@
   display: none;
 }
 
+/* Edges must render above panel backgrounds (z-index: -1) but icon nodes
+   (z-index: 2) still appear on top of edges. */
+.react-flow__edges {
+  z-index: 1;
+}
+
 /* ReactFlow overrides */
 .react-flow__handle {
   opacity: 0;
