@@ -123,14 +123,10 @@ export function exportToSvg(spec: DiagramExport): string {
       const nh = node.height ?? NODE_H
       const bgFill = node.bgColor === 'transparent' ? 'none' : (node.bgColor || 'white')
 
-      const iconSvgContent = icon?.svgContent ?? node.svgContent
-      const innerSvg = iconSvgContent
-        ? iconSvgContent
-            .replace(/<svg[^>]*xmlns[^>]*>/g, '')
-            .replace(/<svg[^>]*>/g, '')
-            .replace(/<\/svg>/g, '')
-            .trim()
-        : `<rect x="10" y="10" width="60" height="60" rx="6" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5"/>`
+      const rawSvg = icon?.svgContent ?? node.svgContent
+      const { inner: innerSvg, viewBox } = rawSvg
+        ? stripSvgWrapper(rawSvg)
+        : { inner: `<rect x="10" y="10" width="60" height="60" rx="6" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5"/>`, viewBox: '0 0 80 80' }
 
       const labelY = nh - 4
       const iconSize = Math.round(Math.min(nw, nh - 20) * 0.8)
@@ -140,7 +136,7 @@ export function exportToSvg(spec: DiagramExport): string {
 
       return `  <g transform="translate(${nx},${ny}) rotate(${rotation}, ${nw / 2}, ${nh / 2})">
     <rect width="${nw}" height="${nh}" rx="10" fill="${bgFill}" stroke="${bgFill === 'none' ? 'none' : '#e2e8f0'}" stroke-width="1.5"/>
-    <svg x="${iconX}" y="6" viewBox="0 0 80 80" width="${iconSize}" height="${iconSize}">${innerSvg}</svg>
+    <svg x="${iconX}" y="6" viewBox="${viewBox}" width="${iconSize}" height="${iconSize}" overflow="visible">${innerSvg}</svg>
     <text x="${nw / 2}" y="${labelY}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="10.5" fill="#374151">${escapeXml(node.label)}</text>
   </g>`
     })
@@ -183,6 +179,21 @@ export async function exportToPng(svgContent: string, filename: string): Promise
     a.download = filename
     a.click()
   }, 'image/png')
+}
+
+function stripSvgWrapper(svgContent: string): { inner: string; viewBox: string } {
+  // Extract the viewBox from the original SVG before stripping the wrapper
+  const vbMatch = svgContent.match(/\bviewBox\s*=\s*["']([^"']+)["']/)
+  const viewBox = vbMatch ? vbMatch[1] : '0 0 80 80'
+
+  const inner = svgContent
+    .replace(/<\?xml[^?]*\?>\s*/i, '')      // strip XML declaration
+    .replace(/<!DOCTYPE[^>]*>\s*/i, '')       // strip DOCTYPE
+    .replace(/<svg\b[^>]*>/i, '')             // strip only the FIRST (outer) <svg> opening tag
+    .replace(/<\/svg>\s*$/i, '')              // strip the LAST </svg> closing tag
+    .trim()
+
+  return { inner, viewBox }
 }
 
 function escapeXml(s: string): string {
