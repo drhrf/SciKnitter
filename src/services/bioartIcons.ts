@@ -1,6 +1,28 @@
 const CACHE_KEY = 'sciknitter:bioart:v2'
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 1 week (static files don't change)
 
+/**
+ * Strips Adobe Illustrator metadata from SVG content and normalises namespace
+ * prefixes so the browser's HTML parser treats it as proper SVG.
+ *
+ * BioArt SVGs use `<ns0:svg xmlns:ns0="…">` (namespace-prefixed root) which
+ * the HTML parser doesn't recognise as SVG, causing `<metadata>` children to
+ * render as visible text. DOMParser + XMLSerializer round-trips the SVG in
+ * XML mode, producing a clean `<svg xmlns="…">` without the prefix.
+ */
+export function sanitizeSvg(raw: string): string {
+  try {
+    const doc = new DOMParser().parseFromString(raw, 'image/svg+xml')
+    if (doc.querySelector('parseerror')) return raw
+    const svgEl = doc.documentElement
+    if (svgEl.tagName.toLowerCase() !== 'svg') return raw
+    svgEl.querySelectorAll('metadata').forEach((el) => el.remove())
+    return new XMLSerializer().serializeToString(svgEl)
+  } catch {
+    return raw
+  }
+}
+
 export interface BioartIcon {
   id: string
   name: string
@@ -51,7 +73,7 @@ export async function fetchBioartSvg(icon: BioartIcon): Promise<string> {
   const url = `${import.meta.env.BASE_URL}bioart-icons/${icon.path}`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Failed to load icon SVG: ${res.status}`)
-  return res.text()
+  return sanitizeSvg(await res.text())
 }
 
 export function clearBioartCache() {

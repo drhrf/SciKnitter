@@ -313,9 +313,14 @@ export function PropertiesPanel() {
               <input
                 type="checkbox"
                 checked={hasBg}
-                onChange={(e) =>
+                onChange={(e) => {
                   patchNodeData(selectedNode.id, { bgColor: e.target.checked ? '#ffffff' : '' })
-                }
+                  if (e.target.checked) {
+                    setNodes((nds) => nds.map((n) =>
+                      n.id === selectedNode.id ? { ...n, zIndex: -1 } : n,
+                    ))
+                  }
+                }}
                 className="rounded"
               />
               <input

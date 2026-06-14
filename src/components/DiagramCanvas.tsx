@@ -33,6 +33,7 @@ import { TextNode } from './TextNode'
 import { CustomEdge } from './CustomEdge'
 import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
 import { fetchServierSvgById } from '../services/servierIcons'
+import { sanitizeSvg } from '../services/bioartIcons'
 import { resolveTextOverlaps } from '../utils/resolveTextOverlaps'
 import type { DiagramExport, Icon, IconNodeData, TextNodeData } from '../types'
 
@@ -163,7 +164,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
                 try {
                   const res = await fetch(`${import.meta.env.BASE_URL}bioart-icons/${filename}.svg`)
                   if (!res.ok) return
-                  const svgContent = await res.text()
+                  const svgContent = sanitizeSvg(await res.text())
                   setNodes((nds) =>
                     nds.map((nd) =>
                       nd.id === n.id
@@ -295,7 +296,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
         svgFiles.forEach((file) => {
           const reader = new FileReader()
           reader.onload = (ev) => {
-            const svgContent = ev.target?.result as string
+            const svgContent = sanitizeSvg(ev.target?.result as string)
             const baseName = file.name.replace(/\.svg$/i, '')
             // Try to parse NIH Bioart filename: BIOART-000658_Title_741470
             const bioartMatch = baseName.match(/^(BIOART-\d+)_(.+?)(?:_\d+)?$/)
