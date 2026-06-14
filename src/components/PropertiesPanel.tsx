@@ -423,12 +423,13 @@ export function PropertiesPanel() {
                     min={0.5}
                     max={20}
                     step={0.5}
-                    defaultValue={nodeData.shapeStrokeWidth ?? 3}
-                    key={`stroke-w-${selectedNode.id}`}
-                    onBlur={(e) =>
-                      patchNodeData(selectedNode.id, { shapeStrokeWidth: Math.max(0.5, Number(e.target.value)) })
-                    }
-                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+                    value={nodeData.shapeStrokeWidth ?? 3}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value)
+                      if (!isNaN(val) && val >= 0.5) {
+                        patchNodeData(selectedNode.id, { shapeStrokeWidth: val })
+                      }
+                    }}
                     className="w-14 text-xs border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                   <span className="text-xs text-gray-400">px thick</span>
