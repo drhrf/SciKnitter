@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Arrow</title><description>Curved single arrow down left</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-12T08:46:31-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>Arrow - Pink</caption><imageColor>Pink</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #ec6f87;
+      }
+
+      .cls-2 {
+        fill: none;
+        stroke: #ec6f87;
+        stroke-miterlimit: 10;
+        stroke-width: 9.91px;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g>
+    <ns0:g id="Layer_1">
+      <ns0:g>
+        <ns0:path class="cls-2" d="M130.78,428.56c31.02-125.15,92-220.94,161.85-301.36,26.94-31.01,55.2-59.74,83.57-86.98" />
+        <ns0:polygon class="cls-1" points="154.11 427.26 123.79 459.78 110.78 417.27 154.11 427.26" />
+      </ns0:g>
+    </ns0:g>
+  </ns0:g>
+  </ns0:svg>

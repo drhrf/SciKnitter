@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Schematic Protein Shape</title><description>Rounded Triangular Protein Shape</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-18T15:50:15-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>Schematic Protein Shape - Blue</caption><imageColor>Blue</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #90c0e7;
+        stroke: #10333f;
+        stroke-miterlimit: 10;
+        stroke-width: 5.51px;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g>
+    <ns0:g id="Layer_1">
+      <ns0:path id="shape" class="cls-1" d="M401.72,315.7l.77-130.97c.09-15.68-15.81-27.98-33.3-25.32-109.86,16.74-204.51,67.92-265.75,139.15-14.37,16.72-1.01,40.81,22.77,40.95l246.58,1.45c15.9.09,28.85-11.21,28.93-25.26Z" />
+    </ns0:g>
+  </ns0:g>
+</ns0:svg>

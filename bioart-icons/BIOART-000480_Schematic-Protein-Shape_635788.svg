@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Schematic Protein Shape</title><description>Schematic protein in the shape of a rounded rectangle with missing circular chunks</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-18T16:18:57-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>Schematic Protein Shape - Green</caption><imageColor>Green</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #90c0e7;
+        stroke: #10333f;
+        stroke-miterlimit: 10;
+        stroke-width: 7.58px;
+      }
+
+      .cls-2 {
+        isolation: isolate;
+      }
+
+      .cls-3 {
+        fill: #009447;
+        mix-blend-mode: color;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g class="cls-2">
+    <ns0:g id="Layer_1">
+      <ns0:path id="shape" class="cls-1" d="M313.57,371.94l.35-243.7c.02-14.35-11.59-26-25.94-26.02l-75.53-.11c-14.35-.02-26,11.59-26.02,25.94v.08c8.72-1.64,18.07.95,24.74,7.77,10.61,10.85,10.42,28.24-.43,38.85-6.68,6.54-15.85,8.94-24.39,7.31l-.04,30.39c8.87-1.85,18.45.67,25.25,7.62,10.61,10.84,10.42,28.24-.43,38.85-6.82,6.67-16.22,9.06-24.91,7.22l-.15,105.62c-.02,14.35,11.59,26,25.94,26.02l75.53.11c14.35.02,26-11.59,26.02-25.94Z" />
+      <ns0:path class="cls-3" d="M287.99,98.43l-75.53-.11h-.04c-16.39,0-29.75,13.33-29.77,29.78l-.03,4.6,4.52-.85c7.81-1.47,15.79,1.03,21.33,6.7,4.42,4.52,6.82,10.5,6.75,16.82-.07,6.33-2.6,12.24-7.12,16.67-5.52,5.4-13.38,7.76-21.03,6.3l-4.49-.86-.06,39.63,4.57-.95c7.98-1.67,16.12.79,21.77,6.56,4.42,4.52,6.82,10.5,6.75,16.82s-2.6,12.24-7.12,16.67c-5.66,5.54-13.69,7.87-21.47,6.22l-4.56-.96-.16,110.29c-.02,16.41,13.31,29.79,29.73,29.81l75.53.11h.05c7.93,0,15.4-3.08,21.02-8.69,5.63-5.62,8.74-13.09,8.75-21.04l.35-243.7c.02-16.41-13.31-29.79-29.72-29.81Z" />
+    </ns0:g>
+  </ns0:g>
+</ns0:svg>

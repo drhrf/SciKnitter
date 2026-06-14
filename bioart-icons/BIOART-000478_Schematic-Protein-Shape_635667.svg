@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Schematic Protein Shape</title><description>Schematic protein in the shape of a parallelogram</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-18T15:58:05-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>Schematic Protein Shape - Blue</caption><imageColor>Blue</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #90c0e7;
+        stroke: #10333f;
+        stroke-miterlimit: 10;
+        stroke-width: 5.68px;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g>
+    <ns0:g id="Layer_1">
+      <ns0:path class="cls-1" d="M295.33,310.74l-200.65.32c-15.03-.2-21.62-19.06-9.98-28.57l109.58-89.59c2.93-2.4,6.62-3.69,10.41-3.64l200.65-.32c15.03.2,21.62,19.06,9.98,28.57l-109.58,89.59c-2.93,2.4-6.62,3.69-10.41,3.64Z" />
+    </ns0:g>
+  </ns0:g>
+</ns0:svg>

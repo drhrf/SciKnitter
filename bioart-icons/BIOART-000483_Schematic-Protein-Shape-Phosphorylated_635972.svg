@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Schematic Protein Shape Phosphorylated</title><description>Schematic Protein Shape Phosphorylated</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-18T16:14:05-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>Schematic Protein Shape Phosphorylated - Red</caption><imageColor>Red</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #90c0e7;
+        stroke: #10333f;
+      }
+
+      .cls-1, .cls-2 {
+        stroke-width: 6.83px;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        fill: none;
+        stroke: #625b69;
+      }
+
+      .cls-4 {
+        fill: #ef4137;
+        mix-blend-mode: color;
+      }
+
+      .cls-5 {
+        isolation: isolate;
+      }
+
+      .cls-3 {
+        fill: #f0f3c4;
+        stroke: #57544d;
+        stroke-width: 3.42px;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g class="cls-5">
+    <ns0:g id="Layer_1">
+      <ns0:g>
+        <ns0:line class="cls-2" x1="119.28" y1="283.15" x2="91.87" y2="290.64" />
+        <ns0:circle class="cls-3" cx="81.5" cy="295.4" r="20.93" />
+      </ns0:g>
+      <ns0:rect id="IP3" class="cls-1" x="112.47" y="153.74" width="298.53" height="173.06" rx="25.96" ry="25.96" transform="translate(-60.3 90.18) rotate(-17.56)" />
+    </ns0:g>
+    <ns0:g id="Layer_1_copy">
+      <ns0:path class="cls-4" d="M425.58,251.95l-36.56-115.5c-4.89-15.44-21.43-24.03-36.87-19.14l-235.12,74.42c-7.48,2.37-13.59,7.51-17.21,14.47-3.62,6.96-4.3,14.92-1.93,22.4l16.56,52.33-13.13,3.59c-1.91-3.49-4.7-6.44-8.21-8.54-10.71-6.41-24.64-2.9-31.05,7.81-6.41,10.71-2.9,24.64,7.81,31.05,3.56,2.13,7.54,3.22,11.58,3.22,1.85,0,3.72-.23,5.56-.69,5.86-1.48,10.8-5.15,13.91-10.34,2.91-4.87,3.86-10.54,2.74-16.06l12.85-3.51,17.93,56.65c2.37,7.48,7.51,13.59,14.47,17.21,4.24,2.2,8.85,3.32,13.5,3.32,2.98,0,5.98-.46,8.9-1.38l235.12-74.42c7.48-2.37,13.59-7.51,17.21-14.47,3.62-6.96,4.3-14.92,1.93-22.4Z" />
+    </ns0:g>
+  </ns0:g>
+</ns0:svg>
