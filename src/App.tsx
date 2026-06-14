@@ -29,17 +29,27 @@ function slugify(s: string) {
   return s.trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'diagram'
 }
 
+function bgColorForExport(exportBg: 'canvas' | 'white' | 'transparent'): string {
+  if (exportBg === 'white') return '#ffffff'
+  if (exportBg === 'transparent') return 'none'
+  return '#f8fafc'
+}
+
 export function App() {
   const canvasRef = useRef<DiagramCanvasHandle>(null)
   const loadFileRef = useRef<HTMLInputElement>(null)
+  const panelLetterRef = useRef(0)
 
   const [snapToGrid, setSnapToGrid] = useState(false)
   const [isSelecting, setIsSelecting] = useState(false)
   const [showLLMPanel, setShowLLMPanel] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [diagramTitle, setDiagramTitle] = useState('Untitled Diagram')
+  const [pngScale, setPngScale] = useState(2)
+  const [exportBg, setExportBg] = useState<'canvas' | 'white' | 'transparent'>('white')
 
-  // Keyboard shortcuts: V = select, H/Escape = pan, Ctrl+Z = undo, Ctrl+Y/Ctrl+Shift+Z = redo
+  // Keyboard shortcuts: V = select, H/Escape = pan, Ctrl+Z = undo, Ctrl+Y/Ctrl+Shift+Z = redo,
+  // Ctrl+C = copy, Ctrl+V = paste, Ctrl+D = duplicate
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -51,6 +61,15 @@ export function App() {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault(); canvasRef.current?.redo()
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+        canvasRef.current?.copySelected()
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        e.preventDefault(); canvasRef.current?.paste()
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+        e.preventDefault(); canvasRef.current?.duplicateSelected()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -61,13 +80,13 @@ export function App() {
   function handleExportSvg() {
     const spec = canvasRef.current?.getSpec(diagramTitle)
     if (!spec) return
-    downloadFile(exportToSvg(spec), `${slugify(diagramTitle)}.svg`, 'image/svg+xml')
+    downloadFile(exportToSvg(spec, bgColorForExport(exportBg)), `${slugify(diagramTitle)}.svg`, 'image/svg+xml')
   }
 
   async function handleExportPng() {
     const spec = canvasRef.current?.getSpec(diagramTitle)
     if (!spec) return
-    await exportToPng(exportToSvg(spec), `${slugify(diagramTitle)}.png`)
+    await exportToPng(exportToSvg(spec, bgColorForExport(exportBg)), `${slugify(diagramTitle)}.png`, pngScale)
   }
 
   function handleSaveJson() {
@@ -218,6 +237,20 @@ export function App() {
           <span className="hidden sm:inline">Text</span>
         </button>
 
+        {/* Panel label */}
+        <button
+          onClick={() => {
+            const letter = String.fromCharCode(65 + (panelLetterRef.current % 26))
+            panelLetterRef.current++
+            window.dispatchEvent(new CustomEvent('sciknitter:addpanellabel', { detail: { letter } }))
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
+          title="Add panel label (A, B, C…)"
+        >
+          <span className="text-xs font-bold">A</span>
+          <span className="hidden sm:inline">Label</span>
+        </button>
+
         {/* Templates */}
         <div className="relative">
           <button
@@ -264,6 +297,20 @@ export function App() {
 
         <div className="h-5 w-px bg-gray-200" />
 
+        {/* Export background toggle */}
+        <div className="flex items-center border border-gray-200 rounded-md overflow-hidden text-[10px]">
+          {(['white', 'transparent'] as const).map(bg => (
+            <button
+              key={bg}
+              onClick={() => setExportBg(bg)}
+              className={`px-2 py-1.5 transition-colors ${exportBg === bg ? 'bg-blue-500 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+              title={`Export background: ${bg}`}
+            >
+              {bg === 'white' ? '□ White' : '⊘ None'}
+            </button>
+          ))}
+        </div>
+
         {/* Export SVG */}
         <button
           onClick={handleExportSvg}
@@ -274,15 +321,27 @@ export function App() {
           <span className="hidden sm:inline">Export SVG</span>
         </button>
 
-        {/* Export PNG */}
-        <button
-          onClick={handleExportPng}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
-          title="Export as PNG (2x)"
-        >
-          <FileImage className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Export PNG</span>
-        </button>
+        {/* Export PNG with resolution picker */}
+        <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
+          <button
+            onClick={handleExportPng}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors"
+            title={`Export as PNG (${pngScale}×)`}
+          >
+            <FileImage className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">PNG</span>
+          </button>
+          <select
+            value={pngScale}
+            onChange={(e) => setPngScale(Number(e.target.value))}
+            className="text-[10px] bg-gray-50 text-gray-600 border-l border-gray-200 pr-1 pl-0.5 py-1.5 focus:outline-none cursor-pointer"
+            title="PNG resolution"
+          >
+            <option value={2}>2× screen</option>
+            <option value={4}>4× print</option>
+            <option value={8}>8× hi-res</option>
+          </select>
+        </div>
 
         {/* Save JSON */}
         <button

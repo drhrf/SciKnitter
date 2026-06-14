@@ -36,6 +36,8 @@ export type EdgeStyle = 'arrow' | 'blunt' | 'dashed' | 'bidirectional'
 export interface EdgeData {
   label?: string
   edgeStyle?: EdgeStyle
+  strokeColor?: string
+  strokeWidth?: number
   [key: string]: unknown
 }
 
@@ -101,5 +103,7 @@ export interface DiagramExport {
     to: string
     label?: string
     style: EdgeStyle
+    strokeColor?: string
+    strokeWidth?: number
   }>
 }

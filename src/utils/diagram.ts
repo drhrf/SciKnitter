@@ -79,7 +79,7 @@ export function specToRFEdges(spec: DiagramExport): Edge[] {
       height: 14,
       color: '#64748b',
     },
-    data: { label: e.label ?? '', edgeStyle: e.style } satisfies EdgeData,
+    data: { label: e.label ?? '', edgeStyle: e.style, strokeColor: e.strokeColor, strokeWidth: e.strokeWidth } satisfies EdgeData,
   }))
 }
 
@@ -133,6 +133,8 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
         to: e.target,
         label: d.label || undefined,
         style: d.edgeStyle ?? 'arrow',
+        strokeColor: (d.strokeColor as string | undefined) || undefined,
+        strokeWidth: (d.strokeWidth as number | undefined) || undefined,
       }
     }),
   }
@@ -344,6 +346,8 @@ export function parseDiagramSpec(raw: string): DiagramExport {
         to: String(edge.to ?? ''),
         label: typeof edge.label === 'string' && edge.label ? edge.label : undefined,
         style: VALID_STYLES.includes(style) ? style : 'arrow',
+        strokeColor: typeof edge.strokeColor === 'string' ? edge.strokeColor : undefined,
+        strokeWidth: typeof edge.strokeWidth === 'number' ? edge.strokeWidth : undefined,
       }
     }),
   }

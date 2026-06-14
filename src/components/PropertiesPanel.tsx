@@ -44,7 +44,7 @@ export function PropertiesPanel() {
     const nc = selectedNodes.length
     const ec = selectedEdges.length
     return (
-      <aside className="w-52 min-w-[13rem] border-l border-gray-200 bg-gray-50 flex flex-col">
+      <aside className="w-52 min-w-[13rem] border-l border-gray-200 bg-gray-50 flex flex-col overflow-y-auto">
         <div className="p-4 space-y-4">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Selection</h2>
           <div className="space-y-1 text-xs text-gray-600">
@@ -79,6 +79,77 @@ export function PropertiesPanel() {
                   <span className="text-xs text-gray-400">Apply to all</span>
                 </div>
               )}
+            </div>
+          )}
+          {/* Align & Distribute — only when multiple nodes are selected */}
+          {selectedNodes.length > 1 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Align</label>
+              <div className="grid grid-cols-3 gap-1">
+                {/* Align left edges */}
+                <button onClick={() => {
+                  const minX = Math.min(...selectedNodes.map(n => n.position.x))
+                  setNodes(nds => nds.map(n => selectedNodes.find(s => s.id === n.id) ? {...n, position: {...n.position, x: minX}} : n))
+                }} className="px-1 py-1.5 text-[10px] border border-gray-200 rounded bg-white hover:bg-gray-50" title="Align left">⇤ Left</button>
+                {/* Align centers horizontally */}
+                <button onClick={() => {
+                  const avgX = selectedNodes.reduce((s, n) => s + n.position.x + (n.width ?? 110) / 2, 0) / selectedNodes.length
+                  setNodes(nds => nds.map(n => { const s = selectedNodes.find(x => x.id === n.id); return s ? {...n, position: {...n.position, x: avgX - (s.width ?? 110) / 2}} : n }))
+                }} className="px-1 py-1.5 text-[10px] border border-gray-200 rounded bg-white hover:bg-gray-50" title="Center horizontally">⇔ H</button>
+                {/* Align right edges */}
+                <button onClick={() => {
+                  const maxX = Math.max(...selectedNodes.map(n => n.position.x + (n.width ?? 110)))
+                  setNodes(nds => nds.map(n => { const s = selectedNodes.find(x => x.id === n.id); return s ? {...n, position: {...n.position, x: maxX - (s.width ?? 110)}} : n }))
+                }} className="px-1 py-1.5 text-[10px] border border-gray-200 rounded bg-white hover:bg-gray-50" title="Align right">Right ⇥</button>
+                {/* Align top edges */}
+                <button onClick={() => {
+                  const minY = Math.min(...selectedNodes.map(n => n.position.y))
+                  setNodes(nds => nds.map(n => selectedNodes.find(s => s.id === n.id) ? {...n, position: {...n.position, y: minY}} : n))
+                }} className="px-1 py-1.5 text-[10px] border border-gray-200 rounded bg-white hover:bg-gray-50" title="Align top">⇡ Top</button>
+                {/* Align middles vertically */}
+                <button onClick={() => {
+                  const avgY = selectedNodes.reduce((s, n) => s + n.position.y + (n.height ?? 100) / 2, 0) / selectedNodes.length
+                  setNodes(nds => nds.map(n => { const s = selectedNodes.find(x => x.id === n.id); return s ? {...n, position: {...n.position, y: avgY - (s.height ?? 100) / 2}} : n }))
+                }} className="px-1 py-1.5 text-[10px] border border-gray-200 rounded bg-white hover:bg-gray-50" title="Center vertically">⇕ V</button>
+                {/* Align bottom edges */}
+                <button onClick={() => {
+                  const maxY = Math.max(...selectedNodes.map(n => n.position.y + (n.height ?? 100)))
+                  setNodes(nds => nds.map(n => { const s = selectedNodes.find(x => x.id === n.id); return s ? {...n, position: {...n.position, y: maxY - (s.height ?? 100)}} : n }))
+                }} className="px-1 py-1.5 text-[10px] border border-gray-200 rounded bg-white hover:bg-gray-50" title="Align bottom">Bottom ⇣</button>
+              </div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5 mt-2">Distribute</label>
+              <div className="flex gap-1">
+                {/* Distribute horizontally */}
+                <button onClick={() => {
+                  const sorted = [...selectedNodes].sort((a, b) => a.position.x - b.position.x)
+                  if (sorted.length < 3) return
+                  const totalW = sorted.reduce((s, n) => s + (n.width ?? 110), 0)
+                  const span = sorted[sorted.length-1].position.x + (sorted[sorted.length-1].width ?? 110) - sorted[0].position.x
+                  const gap = (span - totalW) / (sorted.length - 1)
+                  let cx = sorted[0].position.x
+                  setNodes(nds => nds.map(n => {
+                    const idx = sorted.findIndex(s => s.id === n.id)
+                    if (idx < 0) return n
+                    const x = idx === 0 ? sorted[0].position.x : (() => { cx += (sorted[idx-1].width ?? 110) + gap; return cx })()
+                    return {...n, position: {...n.position, x}}
+                  }))
+                }} className="flex-1 px-1 py-1.5 text-[10px] border border-gray-200 rounded bg-white hover:bg-gray-50" title="Distribute horizontal spacing evenly">↔ H space</button>
+                {/* Distribute vertically */}
+                <button onClick={() => {
+                  const sorted = [...selectedNodes].sort((a, b) => a.position.y - b.position.y)
+                  if (sorted.length < 3) return
+                  const totalH = sorted.reduce((s, n) => s + (n.height ?? 100), 0)
+                  const span = sorted[sorted.length-1].position.y + (sorted[sorted.length-1].height ?? 100) - sorted[0].position.y
+                  const gap = (span - totalH) / (sorted.length - 1)
+                  let cy = sorted[0].position.y
+                  setNodes(nds => nds.map(n => {
+                    const idx = sorted.findIndex(s => s.id === n.id)
+                    if (idx < 0) return n
+                    const y = idx === 0 ? sorted[0].position.y : (() => { cy += (sorted[idx-1].height ?? 100) + gap; return cy })()
+                    return {...n, position: {...n.position, y}}
+                  }))
+                }} className="flex-1 px-1 py-1.5 text-[10px] border border-gray-200 rounded bg-white hover:bg-gray-50" title="Distribute vertical spacing evenly">↕ V space</button>
+              </div>
             </div>
           )}
           <button
@@ -310,6 +381,22 @@ export function PropertiesPanel() {
             </div>
           </div>
 
+          {/* Duplicate */}
+          <button
+            onClick={() => {
+              const newNode = {
+                ...selectedNode,
+                id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                position: { x: selectedNode.position.x + 30, y: selectedNode.position.y + 30 },
+                selected: false,
+              }
+              setNodes((nds) => [...nds, newNode])
+            }}
+            className="w-full flex items-center justify-center gap-1.5 text-xs border border-gray-200 rounded-md py-1.5 bg-white hover:bg-gray-50 transition-colors"
+          >
+            ⧉ Duplicate
+          </button>
+
           {/* Delete */}
           <button
             onClick={() => deleteElements({ nodes: [{ id: selectedNode.id }] })}
@@ -494,6 +581,22 @@ export function PropertiesPanel() {
             </div>
           </div>
 
+          {/* Duplicate */}
+          <button
+            onClick={() => {
+              const newNode = {
+                ...selectedNode,
+                id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                position: { x: selectedNode.position.x + 30, y: selectedNode.position.y + 30 },
+                selected: false,
+              }
+              setNodes((nds) => [...nds, newNode])
+            }}
+            className="w-full flex items-center justify-center gap-1.5 text-xs border border-gray-200 rounded-md py-1.5 bg-white hover:bg-gray-50 transition-colors"
+          >
+            ⧉ Duplicate
+          </button>
+
           {/* Delete */}
           <button
             onClick={() => deleteElements({ nodes: [{ id: selectedNode.id }] })}
@@ -508,11 +611,11 @@ export function PropertiesPanel() {
   }
 
   // ── Edge selected ──────────────────────────────────────────────────────────
-  const edgeData = (selectedEdge!.data ?? {}) as { edgeStyle?: EdgeStyle; label?: string }
+  const edgeData = (selectedEdge!.data ?? {}) as { edgeStyle?: EdgeStyle; label?: string; strokeColor?: string; strokeWidth?: number }
   const currentStyle: EdgeStyle = edgeData.edgeStyle ?? 'arrow'
 
   return (
-    <aside className="w-52 min-w-[13rem] border-l border-gray-200 bg-gray-50 flex flex-col">
+    <aside className="w-52 min-w-[13rem] border-l border-gray-200 bg-gray-50 flex flex-col overflow-y-auto">
       <div className="p-4 space-y-4">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Edge</h2>
 
@@ -569,6 +672,47 @@ export function PropertiesPanel() {
             onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
             className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
+        </div>
+
+        {/* Stroke color */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">Line color</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={edgeData.strokeColor || '#64748b'}
+              onChange={(e) => setEdges(edges => edges.map(ed =>
+                ed.id === selectedEdge!.id ? {...ed, data: {...(ed.data ?? {}), strokeColor: e.target.value}} : ed
+              ))}
+              className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
+            />
+            <button
+              onClick={() => setEdges(edges => edges.map(ed =>
+                ed.id === selectedEdge!.id ? {...ed, data: {...(ed.data ?? {}), strokeColor: undefined}} : ed
+              ))}
+              className="text-[10px] text-gray-400 hover:text-gray-600"
+            >reset</button>
+          </div>
+        </div>
+
+        {/* Stroke width */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">Line thickness</label>
+          <div className="flex gap-1">
+            {[1, 1.5, 2, 3, 4].map(w => (
+              <button
+                key={w}
+                onClick={() => setEdges(edges => edges.map(ed =>
+                  ed.id === selectedEdge!.id ? {...ed, data: {...(ed.data ?? {}), strokeWidth: w}} : ed
+                ))}
+                className={`flex-1 py-1 text-[10px] rounded border transition-colors ${
+                  (edgeData.strokeWidth ?? 2) === w
+                    ? 'bg-blue-500 text-white border-blue-500'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >{w}px</button>
+            ))}
+          </div>
         </div>
 
         {/* Delete */}

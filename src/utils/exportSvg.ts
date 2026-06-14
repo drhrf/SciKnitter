@@ -6,13 +6,13 @@ const NODE_W = 110
 const NODE_H = 100
 const PAD = 70
 
-export function exportToSvg(spec: DiagramExport): string {
+export function exportToSvg(spec: DiagramExport, bgColor = '#f8fafc'): string {
   const iconMap = new Map(getAllIcons().map((i) => [i.id, i]))
   const nodeMap = new Map(spec.nodes.map((n) => [n.id, n]))
 
   if (spec.nodes.length === 0) {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
-  <rect width="400" height="120" fill="#f8fafc"/>
+  <rect width="400" height="120" fill="${bgColor}"/>
   <text x="200" y="65" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#9ca3af">Empty diagram</text>
 </svg>`
   }
@@ -32,13 +32,22 @@ export function exportToSvg(spec: DiagramExport): string {
   const W = Math.max(...allRight) + PAD - ox
   const H = Math.max(...allBottom) + PAD - oy
 
+  // Build per-edge markers so each edge can have its own color
+  const edgeMarkerDefs = spec.edges.map((edge) => {
+    const edgeStrokeColor = edge.strokeColor ?? '#64748b'
+    const safeId = edge.id.replace(/[^a-zA-Z0-9_-]/g, '_')
+    if (edge.style === 'blunt') {
+      return `    <marker id="sk-blunt-${safeId}" markerWidth="6" markerHeight="12" refX="3" refY="6" orient="auto">
+      <line x1="3" y1="1" x2="3" y2="11" stroke="${edgeStrokeColor}" stroke-width="2.5" stroke-linecap="round"/>
+    </marker>`
+    }
+    return `    <marker id="sk-arrow-${safeId}" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M 0 0 L 9 4.5 L 0 9 z" fill="${edgeStrokeColor}"/>
+    </marker>`
+  }).join('\n')
+
   const defs = `  <defs>
-    <marker id="sk-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
-      <path d="M 0 0 L 9 4.5 L 0 9 z" fill="#64748b"/>
-    </marker>
-    <marker id="sk-blunt" markerWidth="6" markerHeight="12" refX="3" refY="6" orient="auto">
-      <line x1="3" y1="1" x2="3" y2="11" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
-    </marker>
+${edgeMarkerDefs}
   </defs>`
 
   const edgeEls = spec.edges
@@ -59,12 +68,15 @@ export function exportToSvg(spec: DiagramExport): string {
       const dy = Math.max(36, Math.abs(ty - sy) * 0.45)
       const pathD = `M ${sx} ${sy} C ${sx} ${sy + dy} ${tx} ${ty - dy} ${tx} ${ty}`
 
+      const strokeColor = edge.strokeColor ?? '#64748b'
+      const strokeWidth = edge.strokeWidth ?? 2
       const isBlunt = edge.style === 'blunt'
       const isDashed = edge.style === 'dashed'
-      const marker = isBlunt ? 'url(#sk-blunt)' : 'url(#sk-arrow)'
-      const dash = isDashed ? ' stroke-dasharray="6,4"' : ''
+      const safeId = edge.id.replace(/[^a-zA-Z0-9_-]/g, '_')
+      const marker = isBlunt ? `url(#sk-blunt-${safeId})` : `url(#sk-arrow-${safeId})`
+      const dash = isDashed ? ` stroke-dasharray="6,4"` : ''
 
-      const pathEl = `  <path d="${pathD}" fill="none" stroke="#64748b" stroke-width="2"${dash} marker-end="${marker}"/>`
+      const pathEl = `  <path d="${pathD}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dash} marker-end="${marker}"/>`
 
       const lx = (sx + tx) / 2
       const ly = (sy + ty) / 2
@@ -148,20 +160,19 @@ export function exportToSvg(spec: DiagramExport): string {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
-  <rect width="${W}" height="${H}" fill="#f8fafc"/>
+  <rect width="${W}" height="${H}" fill="${bgColor}"/>
 ${defs}
 ${edgeEls}
 ${nodeEls}
 </svg>`
 }
 
-export async function exportToPng(svgContent: string, filename: string): Promise<void> {
+export async function exportToPng(svgContent: string, filename: string, scale = 2): Promise<void> {
   const parser = new DOMParser()
   const doc = parser.parseFromString(svgContent, 'image/svg+xml')
   const svgEl = doc.documentElement
   const w = parseFloat(svgEl.getAttribute('width') ?? '800')
   const h = parseFloat(svgEl.getAttribute('height') ?? '600')
-  const scale = 2
   const canvas = document.createElement('canvas')
   canvas.width = w * scale
   canvas.height = h * scale

@@ -40,8 +40,8 @@ export function CustomEdge({
   const isBlunt = edgeStyle === 'blunt'
   const isBidirectional = edgeStyle === 'bidirectional'
 
-  const strokeColor = selected ? '#3b82f6' : '#64748b'
-  const strokeWidth = selected ? 2.5 : 2
+  const strokeColor = edgeData.strokeColor ?? (selected ? '#3b82f6' : '#64748b')
+  const strokeWidth = edgeData.strokeWidth ?? (selected ? 2.5 : 2)
 
   function commitLabel() {
     setEditing(false)

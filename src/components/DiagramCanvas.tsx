@@ -42,6 +42,9 @@ export interface DiagramCanvasHandle {
   autoLayout: () => void
   undo: () => void
   redo: () => void
+  copySelected: () => void
+  paste: () => void
+  duplicateSelected: () => void
 }
 
 interface DiagramCanvasProps {
@@ -92,6 +95,9 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
     const historyRef = useRef<Array<{ nodes: Node[]; edges: Edge[] }>>([])
     const historyIdxRef = useRef(-1)
     const isRestoringRef = useRef(false)
+
+    // Clipboard ref for copy/paste
+    const clipboardRef = useRef<Node[]>([])
 
     // Stable refs to latest state for the debounced snapshot
     const nodesSnapRef = useRef(nodes)
@@ -201,6 +207,30 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           setEdges(snap.edges)
           setTimeout(() => { isRestoringRef.current = false }, 50)
         },
+        copySelected: () => {
+          clipboardRef.current = nodes.filter(n => n.selected)
+        },
+        paste: () => {
+          if (clipboardRef.current.length === 0) return
+          const newNodes = clipboardRef.current.map(n => ({
+            ...n,
+            id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            position: { x: n.position.x + 40, y: n.position.y + 40 },
+            selected: true,
+          }))
+          setNodes(nds => [...nds.map(n => ({...n, selected: false})), ...newNodes])
+        },
+        duplicateSelected: () => {
+          const selected = nodes.filter(n => n.selected)
+          if (selected.length === 0) return
+          const newNodes = selected.map(n => ({
+            ...n,
+            id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            position: { x: n.position.x + 30, y: n.position.y + 30 },
+            selected: true,
+          }))
+          setNodes(nds => [...nds.map(n => ({...n, selected: false})), ...newNodes])
+        },
       }),
       [nodes, edges, setNodes, setEdges],
     )
@@ -306,6 +336,34 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       }
       window.addEventListener('sciknitter:addtext', handler)
       return () => window.removeEventListener('sciknitter:addtext', handler)
+    }, [])
+
+    useEffect(() => {
+      function handler(e: Event) {
+        const { letter } = (e as CustomEvent<{ letter: string }>).detail
+        const data: TextNodeData = {
+          text: letter,
+          fontSize: 20,
+          fontWeight: 'bold',
+          fontStyle: 'normal',
+          textColor: '#111827',
+          bgColor: '',
+          borderColor: '',
+          textAlign: 'left',
+        }
+        setNodesRef.current((nds) =>
+          nds.concat({
+            id: `panel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            type: 'textNode',
+            position: { x: 60 + Math.random() * 200, y: 60 + Math.random() * 100 },
+            width: 50,
+            height: 40,
+            data,
+          }),
+        )
+      }
+      window.addEventListener('sciknitter:addpanellabel', handler)
+      return () => window.removeEventListener('sciknitter:addpanellabel', handler)
     }, [])
 
     return (
