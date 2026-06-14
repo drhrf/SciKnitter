@@ -71,6 +71,7 @@ export type DiagramNodeExport =
       svgContent?: string
       shapeStrokeColor?: string
       shapeStrokeWidth?: number
+      zIndex?: number
     }
   | {
       nodeType: 'text'
@@ -87,6 +88,7 @@ export type DiagramNodeExport =
       bgColor?: string
       borderColor?: string
       textAlign?: 'left' | 'center' | 'right'
+      zIndex?: number
     }
 
 /** Portable diagram format — used for save/load, SVG export, and LLM round-trips */

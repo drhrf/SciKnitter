@@ -40,6 +40,7 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
         position: { x: n.x, y: n.y },
         width: n.width ?? 200,
         height: n.height ?? 60,
+        zIndex: n.zIndex,
         data,
       }
     }
@@ -60,6 +61,7 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
       position: { x: n.x, y: n.y },
       width: n.width ?? 110,
       height: n.height ?? 100,
+      zIndex: n.zIndex,
       data,
     }
   })
@@ -102,6 +104,7 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
           bgColor: d.bgColor || undefined,
           borderColor: d.borderColor || undefined,
           textAlign: d.textAlign,
+          zIndex: n.zIndex !== undefined ? n.zIndex : undefined,
         }
       }
       const d = n.data as IconNodeData
@@ -119,6 +122,7 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
         svgContent: !isBuiltIn ? d.svgContent : undefined,
         shapeStrokeColor: d.shapeStrokeColor,
         shapeStrokeWidth: d.shapeStrokeWidth,
+        zIndex: n.zIndex !== undefined ? n.zIndex : undefined,
       }
     }),
     edges: edges.map((e) => {
@@ -188,32 +192,73 @@ TASK
 Create a diagram layout for:
 "${description}"
 
-RULES
-=====
+CANVAS & NODE SIZES
+===================
+- Canvas: x: 50–1400, y: 50–1000
+- Icon nodes are exactly 110 px wide × 100 px tall. The (x, y) is the TOP-LEFT corner.
+  → To avoid overlap, icon centers must be ≥ 170 px apart in both x and y.
+  → Icon center = (x + 55, y + 50)
+- Text/panel nodes: always set explicit "width" and "height".
+  Annotation text boxes: width 160–280, height 50–100.
+  Panel backgrounds: width and height large enough to surround all member icons
+  with ≥ 40 px padding on every side.
+
+LAYOUT STRATEGY — follow these steps in order
+=============================================
+1. PLAN sections: identify 2–5 logical groups in the diagram.
+2. ASSIGN each group a screen region (e.g. top-left 400×300 block, center column, etc.).
+   Spread groups across the full canvas — use x up to 1300 and y up to 900.
+3. PLACE icons inside each region. Start from the top-left of the region and step
+   right/down in increments of 180 px so icons never overlap.
+4. ADD panels: for each section, output a text node with bgColor, borderColor, and
+   zIndex: -1 that encloses all member icons.
+5. ADD annotation text boxes ABOVE or BESIDE icons — never on top of them.
+6. ADD edges last, choosing from arrow/blunt/dashed/bidirectional.
+
+PANEL BACKGROUNDS
+=================
+Use text nodes as coloured panel backgrounds to group related icons:
+  {
+    "nodeType": "text", "id": "panel1", "text": "Panel Title",
+    "x": 60, "y": 60, "width": 400, "height": 260,
+    "bgColor": "#eff6ff", "borderColor": "#bfdbfe",
+    "fontSize": 12, "fontWeight": "bold", "textAlign": "left",
+    "zIndex": -1
+  }
+Suggested panel colours (mix and match):
+  Blue:   bgColor "#eff6ff"  borderColor "#bfdbfe"
+  Green:  bgColor "#f0fdf4"  borderColor "#bbf7d0"
+  Yellow: bgColor "#fefce8"  borderColor "#fde68a"
+  Purple: bgColor "#faf5ff"  borderColor "#e9d5ff"
+  Gray:   bgColor "#f8fafc"  borderColor "#e2e8f0"
+
+ICON RULES
+==========
 - ALWAYS prefer Servier Medical Art icons for biological and scientific elements
-- Only use iconId values that exactly match ids from the lists above
-- Position nodes at x: 50–900, y: 50–700
-- Space nodes at least 150 px apart — do NOT overlap nodes
-- For pathways, lay out left-to-right or top-to-bottom
-- Use shape icons (shape-rect, shape-circle, etc.) as background containers or grouping boxes, not as scientific elements
-- Edge styles:
-    "arrow"  = activation / positive regulation / flow
-    "blunt"  = inhibition / negative regulation
-    "dashed" = indirect relationship / unknown mechanism
-- You may also add text box annotations with nodeType "text"
+- Only use iconId values that exactly match ids listed above — no guessing
+- Set zIndex: 0 (or omit) for regular icons; zIndex: 1 for key/highlighted icons
+
+EDGE STYLES
+===========
+  "arrow"         = activation / flow / positive regulation
+  "blunt"         = inhibition / negative regulation
+  "dashed"        = indirect / unknown mechanism
+  "bidirectional" = mutual interaction
 
 OUTPUT
 ======
-Return ONLY valid JSON — no markdown code fences, no explanation, no extra text.
+Return ONLY valid JSON — no markdown fences, no explanation, nothing else.
 
 {
   "title": "string",
   "nodes": [
-    { "id": "n1", "iconId": "exact-id-from-list", "label": "Display Name", "x": 100, "y": 100 },
-    { "nodeType": "text", "id": "t1", "text": "Annotation text", "x": 300, "y": 50, "width": 200, "height": 40 }
+    { "nodeType": "text", "id": "panel1", "text": "Section A", "x": 50, "y": 50, "width": 420, "height": 240, "bgColor": "#eff6ff", "borderColor": "#bfdbfe", "fontSize": 12, "fontWeight": "bold", "zIndex": -1 },
+    { "id": "n1", "iconId": "exact-id-from-list", "label": "Protein X", "x": 100, "y": 120 },
+    { "id": "n2", "iconId": "exact-id-from-list", "label": "Protein Y", "x": 280, "y": 120 },
+    { "nodeType": "text", "id": "ann1", "text": "Short annotation", "x": 520, "y": 130, "width": 200, "height": 60 }
   ],
   "edges": [
-    { "id": "e1", "from": "n1", "to": "n2", "label": "optional label", "style": "arrow" }
+    { "id": "e1", "from": "n1", "to": "n2", "style": "arrow" }
   ]
 }`
 }
@@ -260,6 +305,7 @@ export function parseDiagramSpec(raw: string): DiagramExport {
           )
             ? (node.textAlign as 'left' | 'center' | 'right')
             : 'left',
+          zIndex: typeof node.zIndex === 'number' ? node.zIndex : undefined,
         }
       }
 
@@ -272,6 +318,7 @@ export function parseDiagramSpec(raw: string): DiagramExport {
         width: node.width ? Number(node.width) : undefined,
         height: node.height ? Number(node.height) : undefined,
         bgColor: typeof node.bgColor === 'string' ? node.bgColor : undefined,
+        zIndex: typeof node.zIndex === 'number' ? node.zIndex : undefined,
       }
     }),
     edges: (obj.edges as unknown[]).map((e, i) => {
