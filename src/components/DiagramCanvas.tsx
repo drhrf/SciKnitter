@@ -108,11 +108,43 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
     const onDrop = useCallback(
       (e: React.DragEvent) => {
         e.preventDefault()
+
+        // Handle panel icon drag (application/sciknitter data)
         const raw = e.dataTransfer.getData('application/sciknitter')
-        if (!raw) return
-        const icon: Icon = JSON.parse(raw)
-        const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
-        setNodes((nds) => nds.concat(createRFNode(icon, position)))
+        if (raw) {
+          const icon: Icon = JSON.parse(raw)
+          const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
+          setNodes((nds) => nds.concat(createRFNode(icon, position)))
+          return
+        }
+
+        // Handle SVG file drops from the OS (e.g. files downloaded from NIH Bioart)
+        const svgFiles = Array.from(e.dataTransfer.files).filter(
+          (f) => f.type === 'image/svg+xml' || f.name.toLowerCase().endsWith('.svg'),
+        )
+        svgFiles.forEach((file) => {
+          const reader = new FileReader()
+          reader.onload = (ev) => {
+            const svgContent = ev.target?.result as string
+            const baseName = file.name.replace(/\.svg$/i, '')
+            // Try to parse NIH Bioart filename: BIOART-000658_Title_741470
+            const bioartMatch = baseName.match(/^(BIOART-\d+)_(.+?)(?:_\d+)?$/)
+            const name = bioartMatch
+              ? bioartMatch[2].replace(/-/g, ' ')
+              : baseName.replace(/[_-]+/g, ' ')
+            const icon: Icon = {
+              id: `local:${baseName}`,
+              name,
+              category: 'Uploaded',
+              tags: [],
+              source: 'custom',
+              svgContent,
+            }
+            const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
+            setNodes((nds) => nds.concat(createRFNode(icon, position)))
+          }
+          reader.readAsText(file)
+        })
       },
       [screenToFlowPosition, setNodes],
     )

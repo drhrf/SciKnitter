@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { AlertCircle, FolderOpen, Loader2, Plus, RotateCcw, Search, X } from 'lucide-react'
+import { AlertCircle, ExternalLink, FolderOpen, Loader2, RotateCcw, Search, X } from 'lucide-react'
 import { useIconSearch } from '../hooks/useIconSearch'
 import { getAllIcons, getCategories } from '../data/iconsIndex'
 import { ExternalIconSearch } from './ExternalIconSearch'
-import { clearBioartCache, fetchBioartIndex, fetchBioartSvg, type BioartIcon } from '../services/bioartIcons'
+import { clearBioartCache, fetchBioartIndex, type BioartIcon } from '../services/bioartIcons'
 import type { Icon } from '../types'
 
 type Tab = 'library' | 'servier' | 'nihbioart'
@@ -107,14 +107,12 @@ function LibraryTab({ onAddIcon }: IconBrowserProps) {
 
 type BioartLoadState = 'idle' | 'loading' | 'empty' | 'ready' | 'error'
 
-function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
+function NIHBioartTab(_: IconBrowserProps) {
   const [loadState, setLoadState] = useState<BioartLoadState>('idle')
   const [icons, setIcons] = useState<BioartIcon[]>([])
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [selectedCat, setSelectedCat] = useState('All')
-  const [addingId, setAddingId] = useState<string | null>(null)
-
   async function handleLoad(forceRefresh = false) {
     if (forceRefresh) clearBioartCache()
     setLoadState('loading')
@@ -151,25 +149,13 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
       .slice(0, 120)
   }, [icons, query, selectedCat])
 
-  async function handleAdd(icon: BioartIcon) {
-    if (addingId) return
-    setAddingId(icon.id)
-    try {
-      const svgContent = await fetchBioartSvg(icon)
-      const internalIcon: Icon = {
-        id: icon.id,
-        name: icon.name,
-        category: `NIH Bioart · ${icon.category}`,
-        tags: icon.tags,
-        source: 'bioart',
-        svgContent,
-      }
-      onAddIcon(internalIcon)
-    } catch {
-      // silently ignore
-    } finally {
-      setAddingId(null)
-    }
+  function openOnNIH(icon: BioartIcon) {
+    // Derive the numeric bioart ID from the download URL
+    const bioartId = icon.download_url.match(/\/api\/bioarts\/(\d+)\//)?.[1]
+    const url = bioartId
+      ? `https://bioart.niaid.nih.gov/bioart/${bioartId}`
+      : icon.download_url
+    window.open(url, '_blank', 'noopener')
   }
 
   // ── Idle / Error ───────────────────────────────────────────────────────
@@ -291,6 +277,11 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
         )}
       </div>
 
+      {/* How-to banner */}
+      <div className="mx-2 mb-1 px-2.5 py-2 bg-green-50 border border-green-100 rounded-lg text-[9px] text-green-700 leading-relaxed">
+        <span className="font-medium">How to use:</span> Click an icon below to open it on the NIH Bioart website → download the SVG → <span className="font-medium">drag the SVG file onto the canvas</span>.
+      </div>
+
       {/* Grid */}
       <div className="flex-1 overflow-y-auto p-2">
         {filtered.length === 0 ? (
@@ -300,41 +291,23 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
         ) : (
           <div className="grid grid-cols-2 gap-1.5">
             {filtered.map((icon) => {
-              const isAdding = addingId === icon.id
+              const initials = icon.name.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
               return (
                 <div
                   key={icon.id}
-                  onClick={() => handleAdd(icon)}
-                  className={`relative flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 transition-all group select-none ${
-                    isAdding
-                      ? 'opacity-60 cursor-wait'
-                      : 'cursor-pointer hover:border-green-400 hover:shadow-sm'
-                  }`}
-                  title={`${icon.name} — ${icon.category}\nClick to add to canvas`}
+                  onClick={() => openOnNIH(icon)}
+                  className="relative flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-green-400 hover:shadow-sm transition-all group select-none"
+                  title={`${icon.name} — ${icon.category}\nClick to open on NIH Bioart website`}
                 >
-                  {isAdding ? (
-                    <div className="w-12 h-12 flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
-                    </div>
-                  ) : (
-                    <img
-                      src={icon.download_url}
-                      alt={icon.name}
-                      className="w-12 h-12 object-contain"
-                      loading="lazy"
-                    />
-                  )}
+                  <div className="w-12 h-12 flex items-center justify-center rounded-md bg-green-50 text-green-700 font-semibold text-sm">
+                    {initials || '?'}
+                  </div>
                   <span className="mt-1 text-[10px] text-center text-gray-600 leading-tight line-clamp-2 group-hover:text-green-600">
                     {icon.name}
                   </span>
-
-                  {!isAdding && (
-                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                        <Plus className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    </div>
-                  )}
+                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ExternalLink className="w-3 h-3 text-green-400" />
+                  </div>
                 </div>
               )
             })}
@@ -344,8 +317,8 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
 
       {/* Footer */}
       <div className="px-3 py-1.5 border-t border-gray-100 text-center">
-        <p className="text-[9px] text-gray-300">
-          NIH Bioart · Click icon to add
+        <p className="text-[9px] text-gray-400">
+          Click → open NIH page → download SVG → drag to canvas
         </p>
       </div>
     </div>

@@ -110,7 +110,7 @@ export function exportToSvg(spec: DiagramExport): string {
             ? `  <rect x="${nx}" y="${ny}" width="${nw}" height="${nh}" rx="6" fill="${bgFill}" stroke="${borderStroke}" stroke-width="1.5"/>`
             : ''
 
-        const textEl = `  <text font-family="-apple-system,sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" font-style="${fontStyle}" fill="${textColor}" text-anchor="${anchor}">${tspans}</text>`
+        const textEl = `  <text y="${ny}" font-family="-apple-system,sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" font-style="${fontStyle}" fill="${textColor}" text-anchor="${anchor}">${tspans}</text>`
 
         return [bgEl, textEl].filter(Boolean).join('\n')
       }
