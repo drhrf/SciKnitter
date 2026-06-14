@@ -8,7 +8,7 @@ export function TextNode({ id, data, selected }: NodeProps) {
   const [editing, setEditing] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const handleStyle = 'w-2.5 h-2.5 !bg-blue-400 !border-2 !border-white'
+  const handleStyle = 'w-4 h-4 !bg-blue-400 !border-2 !border-white !rounded-full shadow'
 
   useEffect(() => {
     if (editing && textareaRef.current) {
@@ -35,6 +35,8 @@ export function TextNode({ id, data, selected }: NodeProps) {
       <div
         className="w-full h-full overflow-hidden"
         style={{
+          transform: `rotate(${nodeData.rotation ?? 0}deg)`,
+          transformOrigin: 'center center',
           background: nodeData.bgColor || 'transparent',
           border: nodeData.borderColor ? `1.5px solid ${nodeData.borderColor}` : 'none',
           borderRadius: 6,

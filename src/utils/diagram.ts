@@ -33,6 +33,7 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
         bgColor: n.bgColor ?? '',
         borderColor: n.borderColor ?? '',
         textAlign: n.textAlign ?? 'left',
+        rotation: n.rotation,
       }
       return {
         id: n.id,
@@ -104,6 +105,7 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
           bgColor: d.bgColor || undefined,
           borderColor: d.borderColor || undefined,
           textAlign: d.textAlign,
+          rotation: d.rotation !== undefined ? d.rotation : undefined,
           zIndex: n.zIndex !== undefined ? n.zIndex : undefined,
         }
       }
@@ -320,6 +322,7 @@ export function parseDiagramSpec(raw: string): DiagramExport {
           )
             ? (node.textAlign as 'left' | 'center' | 'right')
             : 'left',
+          rotation: typeof node.rotation === 'number' ? node.rotation : undefined,
           zIndex: typeof node.zIndex === 'number' ? node.zIndex : undefined,
         }
       }

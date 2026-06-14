@@ -14,6 +14,7 @@ import {
   SelectionMode,
   ConnectionMode,
   addEdge,
+  reconnectEdge,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -242,6 +243,12 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       [setEdges],
     )
 
+    const onReconnect = useCallback(
+      (oldEdge: Edge, newConnection: Connection) =>
+        setEdges((els) => reconnectEdge(oldEdge, newConnection, els)),
+      [setEdges],
+    )
+
     const onDrop = useCallback(
       (e: React.DragEvent) => {
         e.preventDefault()
@@ -376,6 +383,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onReconnect={onReconnect}
           onDrop={onDrop}
           onDragOver={onDragOver}
           defaultEdgeOptions={defaultEdgeOptions}
@@ -387,7 +395,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           connectionMode={ConnectionMode.Loose}
           fitView
           fitViewOptions={{ padding: 0.4 }}
-          deleteKeyCode="Delete"
+          deleteKeyCode={['Delete', 'Backspace']}
           multiSelectionKeyCode={['Meta', 'Control']}
         >
           <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#e2e8f0" />

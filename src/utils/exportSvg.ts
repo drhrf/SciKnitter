@@ -118,14 +118,22 @@ ${edgeMarkerDefs}
           })
           .join('')
 
+        const rotation = node.rotation ?? 0
+        const cx = nx + nw / 2
+        const cy = ny + nh / 2
+        const groupOpen = rotation !== 0
+          ? `  <g transform="rotate(${rotation}, ${cx}, ${cy})">`
+          : '  <g>'
+        const groupClose = '  </g>'
+
         const bgEl =
           bgFill !== 'none' || borderStroke !== 'none'
-            ? `  <rect x="${nx}" y="${ny}" width="${nw}" height="${nh}" rx="6" fill="${bgFill}" stroke="${borderStroke}" stroke-width="1.5"/>`
+            ? `    <rect x="${nx}" y="${ny}" width="${nw}" height="${nh}" rx="6" fill="${bgFill}" stroke="${borderStroke}" stroke-width="1.5"/>`
             : ''
 
-        const textEl = `  <text y="${ny}" font-family="-apple-system,sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" font-style="${fontStyle}" fill="${textColor}" text-anchor="${anchor}">${tspans}</text>`
+        const textEl = `    <text y="${ny}" font-family="-apple-system,sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" font-style="${fontStyle}" fill="${textColor}" text-anchor="${anchor}">${tspans}</text>`
 
-        return [bgEl, textEl].filter(Boolean).join('\n')
+        return [groupOpen, bgEl, textEl, groupClose].filter(Boolean).join('\n')
       }
 
       // Icon node — use built-in map first, then fall back to embedded svgContent

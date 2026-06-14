@@ -352,6 +352,29 @@ export function PropertiesPanel() {
             </div>
           </div>
 
+          {/* Rotation */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Rotation</label>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => patchNodeData(selectedNode.id, { rotation: ((d.rotation ?? 0) - 90 + 360) % 360 })}
+                className="px-2 py-1 text-xs border border-gray-200 rounded bg-white hover:bg-gray-50"
+              >&#8634; -90°</button>
+              <input
+                type="number"
+                min={0}
+                max={359}
+                value={d.rotation ?? 0}
+                onChange={(e) => patchNodeData(selectedNode.id, { rotation: Number(e.target.value) })}
+                className="w-16 text-xs text-center border border-gray-300 rounded-md px-1 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <button
+                onClick={() => patchNodeData(selectedNode.id, { rotation: ((d.rotation ?? 0) + 90) % 360 })}
+                className="px-2 py-1 text-xs border border-gray-200 rounded bg-white hover:bg-gray-50"
+              >&#8635; +90°</button>
+            </div>
+          </div>
+
           {/* Layer order */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Layer order</label>
