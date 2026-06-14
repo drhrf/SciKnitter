@@ -32,6 +32,7 @@ import { TextNode } from './TextNode'
 import { CustomEdge } from './CustomEdge'
 import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
 import { fetchServierSvgById } from '../services/servierIcons'
+import { resolveTextOverlaps } from '../utils/resolveTextOverlaps'
 import type { DiagramExport, Icon, IconNodeData, TextNodeData } from '../types'
 
 export interface DiagramCanvasHandle {
@@ -66,6 +67,7 @@ function createRFNode(icon: Icon, position: { x: number; y: number }): Node {
     svgContent: icon.svgContent,
     label: icon.name,
     category: icon.category,
+    bgColor: 'transparent',
   }
   return {
     id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -117,7 +119,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       () => ({
         getSpec: (title) => rfToSpec(nodes, edges, title),
         loadSpec: (spec) => {
-          const rfNodes = specToRFNodes(spec)
+          const rfNodes = resolveTextOverlaps(specToRFNodes(spec))
           setNodes(rfNodes)
           setEdges(specToRFEdges(spec))
 
@@ -328,7 +330,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           fitView
           fitViewOptions={{ padding: 0.4 }}
           deleteKeyCode="Delete"
-          multiSelectionKeyCode="Shift"
+          multiSelectionKeyCode={['Meta', 'Control']}
         >
           <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#e2e8f0" />
           <Controls className="!shadow-sm" />

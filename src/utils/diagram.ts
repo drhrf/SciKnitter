@@ -238,6 +238,19 @@ ICON RULES
 - Only use iconId values that exactly match ids listed above — no guessing
 - Set zIndex: 0 (or omit) for regular icons; zIndex: 1 for key/highlighted icons
 
+TEXT ANNOTATION PLACEMENT — CRITICAL
+=====================================
+An icon at (ix, iy) occupies the box (ix, iy) → (ix+110, iy+100).
+A text box at (tx, ty) with width W and height H occupies (tx, ty) → (tx+W, ty+H).
+These boxes MUST NOT INTERSECT. Use these safe offsets:
+
+  Right of icon:  tx = ix + 120,             ty = iy + 20        (width 180–240, height 50–80)
+  Left of icon:   tx = ix - annotW - 20,     ty = iy + 20        (width 180–240, height 50–80)
+  Above icon:     tx = ix - (annotW-110)/2,  ty = iy - annotH - 20  (width 160–220, height 40–70)
+  Below icon:     tx = ix - (annotW-110)/2,  ty = iy + 120       (width 160–220, height 40–70)
+
+Pick the direction with the most empty space. Never place a text box on top of an icon.
+
 EDGE STYLES
 ===========
   "arrow"         = activation / flow / positive regulation
