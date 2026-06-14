@@ -37,7 +37,7 @@ function writeCache(data: CacheData) {
 export async function fetchBioartIndex(): Promise<BioartIcon[]> {
   const cached = readCache()
   if (cached) return cached.icons
-  const res = await fetch('/bioart-icons/manifest.json')
+  const res = await fetch(`${import.meta.env.BASE_URL}bioart-icons/manifest.json`)
   if (!res.ok) throw new Error(`Could not load bioart manifest: ${res.status}`)
   const data: { icons: BioartIcon[] } = await res.json()
   if (!Array.isArray(data?.icons) || data.icons.length === 0) {
