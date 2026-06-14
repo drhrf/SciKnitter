@@ -318,7 +318,7 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
                     </div>
                   ) : (
                     <img
-                      src={icon.path}
+                      src={icon.download_url}
                       alt={icon.name}
                       className="w-12 h-12 object-contain"
                       loading="lazy"

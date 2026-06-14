@@ -6,7 +6,7 @@ export interface BioartIcon {
   name: string
   category: string
   tags: string[]
-  path: string
+  download_url: string
 }
 
 interface CacheData {
@@ -41,14 +41,14 @@ export async function fetchBioartIndex(): Promise<BioartIcon[]> {
   if (!res.ok) throw new Error(`Could not load bioart manifest: ${res.status}`)
   const data: { icons: BioartIcon[] } = await res.json()
   if (!Array.isArray(data?.icons) || data.icons.length === 0) {
-    throw new Error('No bioart icons found in manifest. Please add icons to public/bioart-icons/')
+    throw new Error('Bioart manifest is empty.')
   }
   writeCache({ icons: data.icons, cachedAt: Date.now() })
   return data.icons
 }
 
 export async function fetchBioartSvg(icon: BioartIcon): Promise<string> {
-  const res = await fetch(icon.path)
+  const res = await fetch(icon.download_url)
   if (!res.ok) throw new Error(`Failed to load icon: ${res.status}`)
   return res.text()
 }
