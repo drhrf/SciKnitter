@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Arrow</title><description>Dashed straight down arrow</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-12T08:25:26-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>Arrow - Purple</caption><imageColor>Purple</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        stroke-dasharray: 25.65 25.65;
+      }
+
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke: #662f90;
+        stroke-miterlimit: 10;
+        stroke-width: 12.57px;
+      }
+
+      .cls-3 {
+        fill: #662f90;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g>
+    <ns0:g id="Layer_1">
+      <ns0:g>
+        <ns0:line class="cls-2" x1="250" y1="76.05" x2="250" y2="88.62" />
+        <ns0:line class="cls-1" x1="250" y1="114.27" x2="250" y2="357.94" />
+        <ns0:line class="cls-2" x1="250" y1="370.77" x2="250" y2="383.34" />
+        <ns0:polygon class="cls-3" points="221.78 375.09 250 423.95 278.22 375.09 221.78 375.09" />
+      </ns0:g>
+    </ns0:g>
+  </ns0:g>
+  </ns0:svg>

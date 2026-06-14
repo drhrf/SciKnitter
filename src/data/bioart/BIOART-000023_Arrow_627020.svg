@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Curved Arrow</title><description>Curved brown arrow</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-08-28T15:15:25-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.6'}]</illustrationSoftwares><caption>Curved Arrow - Yellow</caption><imageColor>Yellow</imageColor></metadata><metadata><title>Arrow</title><description>Downward pointing beige arrow</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-08-28T14:04:11-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.6'}]</illustrationSoftwares><caption>Arrow - Yellow</caption><imageColor>Yellow</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        mask: url(#mask);
+      }
+
+      .cls-2 {
+        fill: #f9ed32;
+        stroke: url(#linear-gradient-2);
+        stroke-miterlimit: 10;
+        stroke-width: 5.74px;
+      }
+
+      .cls-3 {
+        filter: url(#luminosity-invert);
+      }
+
+      .cls-4 {
+        fill: url(#linear-gradient);
+      }
+    </ns0:style>
+    <ns0:filter id="luminosity-invert" x="53.94" y="125.89" width="393.15" height="321.94" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <ns0:feColorMatrix result="cm" values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0" />
+    </ns0:filter>
+    <ns0:linearGradient id="linear-gradient" x1="250.55" y1="293.62" x2="248.32" y2="138.28" gradientUnits="userSpaceOnUse">
+      <ns0:stop offset="0" stop-color="#000" />
+      <ns0:stop offset=".95" stop-color="#fff" />
+    </ns0:linearGradient>
+    <ns0:mask id="mask" x="53.94" y="125.89" width="393.15" height="321.94" maskUnits="userSpaceOnUse">
+      <ns0:g class="cls-3">
+        <ns0:rect class="cls-4" x="53.94" y="134.45" width="393.15" height="313.38" />
+      </ns0:g>
+    </ns0:mask>
+    <ns0:linearGradient id="linear-gradient-2" x1="250" y1="125.89" x2="250" y2="427.27" gradientUnits="userSpaceOnUse">
+      <ns0:stop offset=".11" stop-color="#002434" />
+      <ns0:stop offset="1" stop-color="#002434" />
+    </ns0:linearGradient>
+  </ns0:defs>
+  
+  <ns0:g>
+    <ns0:g id="Arrow-yellow">
+      <ns0:g class="cls-1">
+        <ns0:polygon class="cls-2" points="329.66 128.76 329.66 241.63 404.23 241.63 250.72 424.4 249.28 424.4 95.77 241.63 170.34 241.63 170.34 128.76 329.66 128.76" />
+      </ns0:g>
+    </ns0:g>
+  </ns0:g>
+</ns0:svg>

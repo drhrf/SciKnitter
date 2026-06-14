@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Schematic Protein Shape</title><description>Schematic protein in the shape of a rounded rectangle with shading</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-18T16:27:21-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>Schematic Protein Shape - Blue</caption><imageColor>Blue</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #8dd9ff;
+      }
+
+      .cls-2 {
+        fill: none;
+      }
+
+      .cls-2, .cls-3 {
+        stroke: #040472;
+        stroke-miterlimit: 10;
+        stroke-width: 5.5px;
+      }
+
+      .cls-3, .cls-4 {
+        fill: #6db3c9;
+      }
+
+      .cls-5 {
+        clip-path: url(#clippath);
+      }
+    </ns0:style>
+    <ns0:clipPath id="clippath">
+      <ns0:path class="cls-3" d="M397.71,144.3h-254.78c-4.8,0-9.16,1.71-12.66,4.47l-.05-.06-.97.9c-.41.37-.82.72-1.2,1.11l-39.79,36.96c-.25.23-.5.44-.73.68l-.14.13h.02c-3.52,3.71-5.71,8.68-5.71,14.18v132.46c0,11.37,9.21,20.58,20.58,20.58h254.78c4.33,0,8.34-1.35,11.65-3.63h0s.27-.21.48-.4c1.13-.83,2.16-1.78,3.1-2.83,8.31-7.67,28.88-26.95,36.79-34.37,5.54-3.69,9.2-9.98,9.2-17.14v-132.46c0-11.37-9.22-20.58-20.58-20.58Z" />
+    </ns0:clipPath>
+  </ns0:defs>
+  
+  <ns0:g>
+    <ns0:g id="Layer_1">
+      <ns0:g>
+        <ns0:path class="cls-4" d="M397.71,144.3h-254.78c-4.8,0-9.16,1.71-12.66,4.47l-.05-.06-.97.9c-.41.37-.82.72-1.2,1.11l-39.79,36.96c-.25.23-.5.44-.73.68l-.14.13h.02c-3.52,3.71-5.71,8.68-5.71,14.18v132.46c0,11.37,9.21,20.58,20.58,20.58h254.78c4.33,0,8.34-1.35,11.65-3.63h0s.27-.21.48-.4c1.13-.83,2.16-1.78,3.1-2.83,8.31-7.67,28.88-26.95,36.79-34.37,5.54-3.69,9.2-9.98,9.2-17.14v-132.46c0-11.37-9.22-20.58-20.58-20.58Z" />
+        <ns0:g class="cls-5">
+          <ns0:rect class="cls-1" x="81.7" y="183.41" width="291.88" height="172.3" rx="24.16" ry="24.16" />
+        </ns0:g>
+        <ns0:path class="cls-2" d="M397.71,144.3h-254.78c-4.8,0-9.16,1.71-12.66,4.47l-.05-.06-.97.9c-.41.37-.82.72-1.2,1.11l-39.79,36.96c-.25.23-.5.44-.73.68l-.14.13h.02c-3.52,3.71-5.71,8.68-5.71,14.18v132.46c0,11.37,9.21,20.58,20.58,20.58h254.78c4.33,0,8.34-1.35,11.65-3.63h0s.27-.21.48-.4c1.13-.83,2.16-1.78,3.1-2.83,8.31-7.67,28.88-26.95,36.79-34.37,5.54-3.69,9.2-9.98,9.2-17.14v-132.46c0-11.37-9.22-20.58-20.58-20.58Z" />
+      </ns0:g>
+    </ns0:g>
+  </ns0:g>
+</ns0:svg>
