@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Lightning Bolt</title><description>Lightening bolt</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-05T14:25:15-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.6'}]</illustrationSoftwares><caption>Lightning Bolt - BlackWhite</caption><imageColor>BlackWhite</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #fff;
+        stroke: #685c28;
+        stroke-linejoin: round;
+        stroke-width: 7.09px;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g>
+    <ns0:g id="Layer_2">
+      <ns0:polygon class="cls-1" points="122.91 433.97 197.21 323.32 190.52 292.8 270.81 204.29 259.49 165.65 339.24 61.07 358.78 151.7 302.99 204.85 311.08 230.94 221.4 309.77 220.57 337.81 122.91 433.97" />
+    </ns0:g>
+  </ns0:g>
+  </ns0:svg>

@@ -142,6 +142,26 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
   }
 }
 
+function getCachedBioartIcons(): Array<{ id: string; name: string }> {
+  try {
+    const raw = localStorage.getItem('sciknitter:bioart:v2')
+    if (!raw) return []
+    const data = JSON.parse(raw) as { icons: Array<{ id: string; name: string }> }
+    if (!Array.isArray(data?.icons)) return []
+    // Deduplicate by BIOART number — one entry per unique concept
+    const seen = new Set<string>()
+    return data.icons.filter((i) => {
+      const m = i.id.match(/bioart:BIOART-(\d+)/)
+      if (!m) return true
+      if (seen.has(m[1])) return false
+      seen.add(m[1])
+      return true
+    })
+  } catch {
+    return []
+  }
+}
+
 function getCachedServierIcons(): Array<{ id: string; name: string; category: string }> {
   try {
     const raw = localStorage.getItem('sciknitter:servier:v2')
@@ -159,21 +179,30 @@ export function generateLLMPrompt(description: string): string {
   const shapeIcons = allBuiltIn.filter((i) => i.category === 'Shapes')
   const scientificIcons = allBuiltIn.filter((i) => i.category !== 'Shapes')
 
+  const bioartIcons = getCachedBioartIcons()
   const servierIcons = getCachedServierIcons()
 
+  const bioartSection = bioartIcons.length > 0
+    ? `NIH BIOART ICONS — PRIMARY SOURCE (${bioartIcons.length} unique concepts)
+${'='.repeat(62)}
+${bioartIcons
+    .slice(0, 700)
+    .map((i) => `  • ${i.id}  "${i.name}"`)
+    .join('\n')}`
+    : `⚠️  NIH BIOART ICONS NOT LOADED
+${'='.repeat(62)}
+Open the "NIH Bioart" tab in the icon browser first, then regenerate this prompt.`
+
   const servierSection = servierIcons.length > 0
-    ? `SERVIER MEDICAL ART ICONS — PRIMARY SOURCE (${servierIcons.length} total; top 600 shown)
+    ? `SERVIER MEDICAL ART ICONS — SECONDARY SOURCE (use if BioArt has no match)
 ${'='.repeat(62)}
 ${servierIcons
-    .slice(0, 600)
+    .slice(0, 400)
     .map((i) => `  • ${i.id}  "${i.name}"  [${i.category}]`)
     .join('\n')}`
-    : `⚠️  SERVIER ICONS NOT LOADED
-${'='.repeat(62)}
-Open the "Servier" tab in the icon browser first, then regenerate this prompt.
-Until then, only the built-in icons below are available.`
+    : ''
 
-  const builtInSection = `BUILT-IN SCIENTIFIC ICONS (fallback; prefer Servier above)
+  const builtInSection = `BUILT-IN SCIENTIFIC ICONS (last fallback)
 ${'='.repeat(62)}
 ${scientificIcons
     .map((i) => `  • ${i.id}  "${i.name}"  [${i.tags.slice(0, 4).join(', ')}]`)
@@ -187,8 +216,9 @@ ${shapeIcons
 
   return `You are a scientific diagram layout assistant for SciKnitter.
 
-${servierSection}
+${bioartSection}
 
+${servierSection ? servierSection + '\n' : ''}
 ${builtInSection}
 
 TASK
@@ -238,7 +268,8 @@ Suggested panel colours (mix and match):
 
 ICON RULES
 ==========
-- ALWAYS prefer Servier Medical Art icons for biological and scientific elements
+- ALWAYS prefer NIH BioArt icons (primary source) for biological and scientific elements
+- Use Servier icons only when BioArt has no suitable match
 - Only use iconId values that exactly match ids listed above — no guessing
 - Set zIndex: 0 (or omit) for regular icons; zIndex: 1 for key/highlighted icons
 

@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
-import { FolderOpen, Search, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Loader2, RotateCcw, Search, X } from 'lucide-react'
 import { useIconSearch } from '../hooks/useIconSearch'
 import { getAllIcons, getCategories } from '../data/iconsIndex'
-import { getBundledBioartIcons } from '../data/bioartIcons'
+import { clearBioartCache, fetchBioartIndex, fetchBioartSvg, type BioartIcon } from '../services/bioartIcons'
 import { ExternalIconSearch } from './ExternalIconSearch'
 import type { Icon } from '../types'
 
@@ -106,52 +106,67 @@ function LibraryTab({ onAddIcon }: IconBrowserProps) {
 // ── NIH Bioart tab ────────────────────────────────────────────────────────
 
 function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
+  const [icons, setIcons] = useState<BioartIcon[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [query, setQuery] = useState('')
-  const [selectedCat, setSelectedCat] = useState('All')
+  const [adding, setAdding] = useState<string | null>(null)
 
-  const allIcons = useMemo(() => getBundledBioartIcons(), [])
-
-  const categories = useMemo(() => {
-    const cats = [...new Set(allIcons.map((i) => i.category))].sort()
-    return ['All', ...cats]
-  }, [allIcons])
+  useEffect(() => {
+    fetchBioartIndex()
+      .then(setIcons)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
-    return allIcons.filter((i) => {
-      if (selectedCat !== 'All' && i.category !== selectedCat) return false
-      if (!q) return true
-      return i.name.toLowerCase().includes(q) || i.tags.some((t) => t.includes(q))
-    })
-  }, [allIcons, query, selectedCat])
+    if (!q) return icons
+    return icons.filter(
+      (i) => i.name.toLowerCase().includes(q) || i.tags.some((t) => t.includes(q)),
+    )
+  }, [icons, query])
 
-  function handleDragStart(e: React.DragEvent, icon: Icon) {
-    e.dataTransfer.setData('application/sciknitter', JSON.stringify(icon))
-    e.dataTransfer.effectAllowed = 'copy'
+  async function handleAdd(icon: BioartIcon) {
+    if (adding) return
+    setAdding(icon.id)
+    try {
+      const svgContent = await fetchBioartSvg(icon)
+      const fullIcon: Icon = {
+        id: icon.id,
+        name: icon.name,
+        category: icon.category,
+        tags: icon.tags,
+        source: 'bioart',
+        svgContent,
+      }
+      onAddIcon(fullIcon)
+    } catch {
+      // silently fail
+    } finally {
+      setAdding(null)
+    }
   }
 
-  if (allIcons.length === 0) {
+  if (loading) {
     return (
-      <div className="flex flex-col items-center px-4 py-8 gap-4 text-center">
-        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
-          <FolderOpen className="w-5 h-5 text-green-400" />
-        </div>
-        <p className="text-xs font-medium text-gray-700">No icons bundled yet</p>
-        <div className="text-[10px] text-gray-500 leading-relaxed text-left bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-200 space-y-1.5 w-full">
-          <p>Add SVG files to the repo and push — they appear here automatically.</p>
-          <p>
-            <span className="font-medium text-gray-700">Flat layout</span> (all in one category):
-          </p>
-          <p className="font-mono text-[9px] text-gray-600 bg-white border border-gray-100 rounded px-2 py-1">
-            src/data/bioart/BIOART-000001_Cell.svg
-          </p>
-          <p>
-            <span className="font-medium text-gray-700">By category</span> (use subdirectories):
-          </p>
-          <p className="font-mono text-[9px] text-gray-600 bg-white border border-gray-100 rounded px-2 py-1">
-            src/data/bioart/Cell Biology/BIOART-000001_Cell.svg
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <Loader2 className="w-7 h-7 text-green-400 animate-spin" />
+        <p className="text-xs text-gray-400">Loading {'…'}</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center px-4 py-8 gap-3 text-center">
+        <p className="text-xs text-red-500">{error}</p>
+        <button
+          onClick={() => { setError(''); setLoading(true); fetchBioartIndex().then(setIcons).catch(e => setError(e.message)).finally(() => setLoading(false)) }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50"
+        >
+          <RotateCcw className="w-3.5 h-3.5" /> Retry
+        </button>
       </div>
     )
   }
@@ -159,38 +174,29 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-3 pt-2 pb-1 border-b border-gray-200 space-y-1.5">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${allIcons.length} icons…`}
-            className="w-full pl-8 pr-7 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-400"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-        <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-hide">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCat(cat)}
-              className={`whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
-                selectedCat === cat
-                  ? 'bg-green-500 text-white'
-                  : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search ${icons.length.toLocaleString()} icons…`}
+              className="w-full pl-8 pr-7 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
+            {query && (
+              <button onClick={() => setQuery('')} className="absolute right-2 top-2 text-gray-400 hover:text-gray-600">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => { clearBioartCache(); setLoading(true); fetchBioartIndex().then(setIcons).catch(e => setError(e.message)).finally(() => setLoading(false)) }}
+            title="Refresh"
+            className="p-1.5 text-gray-400 hover:text-gray-600"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
@@ -200,29 +206,36 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
         ) : (
           <div className="grid grid-cols-2 gap-1.5">
             {filtered.map((icon) => (
-              <div
+              <button
                 key={icon.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, icon)}
-                onClick={() => onAddIcon(icon)}
-                title={`${icon.name}\nDrag to canvas or click to add`}
-                className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 cursor-grab hover:border-green-400 hover:shadow-sm transition-all group select-none"
+                onClick={() => handleAdd(icon)}
+                disabled={!!adding}
+                title={`${icon.name}\nClick to add to canvas`}
+                className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-sm transition-all group select-none disabled:opacity-60"
               >
-                <div
-                  className="w-12 h-12 flex items-center justify-center"
-                  dangerouslySetInnerHTML={{ __html: icon.svgContent }}
-                />
+                {adding === icon.id ? (
+                  <div className="w-12 h-12 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
+                  </div>
+                ) : (
+                  <img
+                    src={`${import.meta.env.BASE_URL}bioart-icons/${icon.path}`}
+                    className="w-12 h-12 object-contain"
+                    loading="lazy"
+                    alt={icon.name}
+                  />
+                )}
                 <span className="mt-1 text-[10px] text-center text-gray-600 leading-tight line-clamp-2 group-hover:text-green-600">
                   {icon.name}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         )}
       </div>
 
       <div className="px-3 py-1.5 border-t border-gray-100 text-center">
-        <p className="text-[10px] text-gray-400">Drag to canvas or click to add</p>
+        <p className="text-[10px] text-gray-400">Click to add to canvas</p>
       </div>
     </div>
   )

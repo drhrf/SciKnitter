@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Pedigree Diagram</title><description>Blue and red pedigree diagram in greyscale/black and white</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-08-28T10:32:52-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.6'}]</illustrationSoftwares><caption>Pedigree Diagram - BlackWhite</caption><imageColor>BlackWhite</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #4d4d4d;
+      }
+
+      .cls-2 {
+        fill: none;
+        stroke: #7b7b7b;
+        stroke-miterlimit: 10;
+        stroke-width: 3.18px;
+      }
+
+      .cls-3 {
+        fill: #a4a4a4;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g>
+    <ns0:g id="PedigreeDiagram0001-blackwhite">
+      <ns0:g id="lines">
+        <ns0:line class="cls-2" x1="219.58" y1="132.44" x2="311.53" y2="132.44" />
+        <ns0:line class="cls-2" x1="259.3" y1="343.76" x2="259.3" y2="132.44" />
+        <ns0:polyline class="cls-2" points="377.15 338.15 377.15 253.1 143.6 253.1 143.6 346.35" />
+      </ns0:g>
+      <ns0:rect class="cls-1" x="231.88" y="326.39" width="58.28" height="58.28" />
+      <ns0:rect class="cls-1" x="173.6" y="103.3" width="58.28" height="58.28" />
+      <ns0:rect class="cls-3" x="116.61" y="327.02" width="58.28" height="58.28" />
+      <ns0:circle class="cls-1" cx="320.17" cy="132.44" r="30" />
+      <ns0:circle class="cls-3" cx="380.31" cy="355.96" r="30" />
+    </ns0:g>
+  </ns0:g>
+  </ns0:svg>

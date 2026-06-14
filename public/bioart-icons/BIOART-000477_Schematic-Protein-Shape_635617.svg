@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>Schematic Protein Shape</title><description>Rounded Triangular Protein Shape</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-18T15:50:15-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>Schematic Protein Shape - Brown</caption><imageColor>Brown</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        fill: #90c0e7;
+        stroke: #10333f;
+        stroke-miterlimit: 10;
+        stroke-width: 5.51px;
+      }
+
+      .cls-2 {
+        isolation: isolate;
+      }
+
+      .cls-3 {
+        fill: #8b5f3c;
+        mix-blend-mode: color;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g class="cls-2">
+    <ns0:g id="Layer_1">
+      <ns0:path id="shape" class="cls-1" d="M401.72,315.7l.77-130.97c.09-15.68-15.81-27.98-33.3-25.32-109.86,16.74-204.51,67.92-265.75,139.15-14.37,16.72-1.01,40.81,22.77,40.95l246.58,1.45c15.9.09,28.85-11.21,28.93-25.26Z" />
+      <ns0:path class="cls-3" d="M395.55,164.17c-7.23-6.25-16.99-8.98-26.78-7.49-54.45,8.29-105.58,24.93-151.98,49.43-45.59,24.08-84.43,54.57-115.44,90.65-6.93,8.06-8.51,18.47-4.23,27.87,4.92,10.8,16.06,17.56,29.07,17.63l246.58,1.45c.07,0,.14,0,.21,0,17.29,0,31.4-12.52,31.49-27.99l.77-130.98c.05-7.82-3.4-15.13-9.7-20.57Z" />
+    </ns0:g>
+  </ns0:g>
+</ns0:svg>

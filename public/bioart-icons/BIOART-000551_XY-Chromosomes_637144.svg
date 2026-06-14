@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500">
+  <metadata><title>XYChromosomes</title><description>XY Chromosome in beige represented as an elongated, non-duplicated structure, with longer X chromorsome represented on the left, and the shorter Y on the right</description><license>Public Domain</license><creator>Ryan Kissinger</creator><creationDate>2024-09-05T14:38:07-06:00</creationDate><credit>Courtesy of NIAID</credit><illustrationSoftwares>[{'name': 'Adobe Illustrator', 'version': '28.7'}]</illustrationSoftwares><caption>XYChromosomes - Red</caption><imageColor>Red</imageColor></metadata><ns0:defs>
+    <ns0:style>
+      .cls-1 {
+        isolation: isolate;
+      }
+
+      .cls-2 {
+        fill: none;
+      }
+
+      .cls-2, .cls-3 {
+        stroke: #565655;
+        stroke-miterlimit: 10;
+        stroke-width: 1.78px;
+      }
+
+      .cls-4 {
+        mix-blend-mode: color;
+      }
+
+      .cls-3, .cls-5 {
+        fill: #f0eeea;
+      }
+
+      .cls-6 {
+        fill: #ef4137;
+      }
+    </ns0:style>
+  </ns0:defs>
+  
+  <ns0:g class="cls-1">
+    <ns0:g id="Layer_2">
+      <ns0:g>
+        <ns0:path class="cls-5" d="M225.87,182.34v-113.26c0-9.85-7.98-17.82-17.82-17.82s-17.82,7.98-17.82,17.82v113.26c0,5.63,2.66,10.58,6.73,13.85-4.07,3.27-6.73,8.22-6.73,13.85v207.74c0,9.85,7.98,17.82,17.82,17.82s17.82-7.98,17.82-17.82v-207.74c0-5.63-2.66-10.58-6.73-13.85,4.07-3.27,6.73-8.22,6.73-13.85Z" />
+        <ns0:path class="cls-2" d="M225.87,182.34v-113.26c0-9.85-7.98-17.82-17.82-17.82s-17.82,7.98-17.82,17.82v113.26c0,5.63,2.66,10.58,6.73,13.85-4.07,3.27-6.73,8.22-6.73,13.85v207.74c0,9.85,7.98,17.82,17.82,17.82s17.82-7.98,17.82-17.82v-207.74c0-5.63-2.66-10.58-6.73-13.85,4.07-3.27,6.73-8.22,6.73-13.85Z" />
+      </ns0:g>
+      <ns0:path class="cls-3" d="M276.04,182.34v-21.23c0-9.85-7.98-17.82-17.82-17.82s-17.82,7.98-17.82,17.82v21.23c0,5.63,2.66,10.58,6.73,13.85-4.07,3.27-6.73,8.22-6.73,13.85v113.87c0,9.85,7.98,17.82,17.82,17.82s17.82-7.98,17.82-17.82v-113.87c0-5.63-2.66-10.58-6.73-13.85,4.07-3.27,6.73-8.22,6.73-13.85Z" />
+    </ns0:g>
+    <ns0:g id="Layer_2_copy" class="cls-4">
+      <ns0:g>
+        <ns0:path class="cls-6" d="M208.05,50.37c-10.32,0-18.72,8.4-18.72,18.72v113.26c0,5.29,2.26,10.28,6.24,13.85-3.98,3.57-6.24,8.56-6.24,13.85v207.74c0,10.32,8.4,18.72,18.72,18.72s18.72-8.4,18.72-18.72v-207.74c0-5.29-2.26-10.28-6.24-13.85,3.98-3.57,6.24-8.56,6.24-13.85v-113.26c0-10.32-8.4-18.72-18.72-18.72Z" />
+        <ns0:path class="cls-6" d="M276.93,182.34v-21.23c0-10.32-8.4-18.72-18.72-18.72s-18.72,8.4-18.72,18.72v21.23c0,5.29,2.26,10.28,6.25,13.85-3.98,3.57-6.25,8.56-6.25,13.85v113.87c0,10.32,8.4,18.72,18.72,18.72s18.72-8.4,18.72-18.72v-113.87c0-5.29-2.26-10.28-6.25-13.85,3.98-3.57,6.25-8.56,6.25-13.85Z" />
+      </ns0:g>
+    </ns0:g>
+  </ns0:g>
+  </ns0:svg>
