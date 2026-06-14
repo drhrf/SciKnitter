@@ -31,6 +31,7 @@ import { IconNode } from './IconNode'
 import { TextNode } from './TextNode'
 import { CustomEdge } from './CustomEdge'
 import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
+import { fetchServierSvgById } from '../services/servierIcons'
 import type { DiagramExport, Icon, IconNodeData, TextNodeData } from '../types'
 
 export interface DiagramCanvasHandle {
@@ -116,8 +117,29 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       () => ({
         getSpec: (title) => rfToSpec(nodes, edges, title),
         loadSpec: (spec) => {
-          setNodes(specToRFNodes(spec))
+          const rfNodes = specToRFNodes(spec)
+          setNodes(rfNodes)
           setEdges(specToRFEdges(spec))
+
+          // Async-resolve SVG content for Servier icons (LLM specs carry only the id)
+          const servierNodes = rfNodes.filter((n) =>
+            (n.data as IconNodeData).iconId?.startsWith('servier:'),
+          )
+          if (servierNodes.length > 0) {
+            Promise.all(
+              servierNodes.map(async (n) => {
+                const result = await fetchServierSvgById((n.data as IconNodeData).iconId)
+                if (!result) return
+                setNodes((nds) =>
+                  nds.map((nd) =>
+                    nd.id === n.id
+                      ? { ...nd, data: { ...nd.data, svgContent: result.svgContent, category: result.category } }
+                      : nd,
+                  ),
+                )
+              }),
+            )
+          }
         },
         clearAll: () => {
           setNodes([])

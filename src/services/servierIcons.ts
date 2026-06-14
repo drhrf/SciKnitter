@@ -140,3 +140,22 @@ export async function fetchServierSvg(icon: ServierIcon): Promise<string> {
   if (!res.ok) throw new Error(`Failed to load icon: ${res.status}`)
   return res.text()
 }
+
+/** Looks up a Servier icon by id from the localStorage cache and fetches its SVG. */
+export async function fetchServierSvgById(
+  iconId: string,
+): Promise<{ svgContent: string; category: string } | null> {
+  if (!iconId.startsWith('servier:')) return null
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw) as { icons: ServierIcon[] }
+    if (!Array.isArray(data?.icons)) return null
+    const icon = data.icons.find((i) => i.id === iconId)
+    if (!icon) return null
+    const svgContent = await fetchServierSvg(icon)
+    return { svgContent, category: icon.category }
+  } catch {
+    return null
+  }
+}
