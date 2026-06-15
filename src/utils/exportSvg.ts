@@ -228,8 +228,15 @@ export function exportToSvg(spec: DiagramExport, bgColor = '#f8fafc'): string {
     .join('\n')
 
   // ── Nodes ───────────────────────────────────────────────────────────────────
-  const nodeEls = spec.nodes
-    .map((node, nodeIdx) => {
+  // Effective stacking mirrors specToRFNodes(): filled text nodes are panel
+  // backgrounds (z < 0) that must sit BEHIND the edges; icons and annotation
+  // text sit in front. SVG has no z-index — order is pure document order — so
+  // we partition the elements and emit panels, then edges, then everything else.
+  const nodeParts = spec.nodes
+    .map((node, nodeIdx): { z: number; el: string } => {
+      const z = node.nodeType === 'text'
+        ? (node.bgColor ? -1 : (node.zIndex ?? 2))
+        : (node.zIndex ?? 2)
       if (node.nodeType === 'text') {
         const nx = node.x - ox
         const ny = node.y - oy
@@ -269,7 +276,7 @@ export function exportToSvg(spec: DiagramExport, bgColor = '#f8fafc'): string {
 
         const textEl = `<text y="${ny}" font-family="-apple-system,sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" font-style="${fontStyle}" fill="${textColor}" text-anchor="${anchor}">${tspans}</text>`
 
-        return [groupOpen, bgEl, textEl, groupClose].filter(Boolean).join('\n')
+        return { z, el: [groupOpen, bgEl, textEl, groupClose].filter(Boolean).join('\n') }
       }
 
       // Icon node
@@ -298,19 +305,23 @@ export function exportToSvg(spec: DiagramExport, bgColor = '#f8fafc'): string {
       const iconX    = Math.round((nw - iconSize) / 2)
       const rotation = node.rotation ?? 0
 
-      return `<g transform="translate(${nx},${ny}) rotate(${rotation}, ${nw / 2}, ${nh / 2})">
+      return { z, el: `<g transform="translate(${nx},${ny}) rotate(${rotation}, ${nw / 2}, ${nh / 2})">
   <rect width="${nw}" height="${nh}" rx="10" fill="${bgFill}" stroke="${bgFill === 'none' ? 'none' : '#e2e8f0'}" stroke-width="1.5"/>
   <svg x="${iconX}" y="6" viewBox="${viewBox}" width="${iconSize}" height="${iconSize}" overflow="visible">${innerSvg}</svg>
   <text x="${nw / 2}" y="${labelY}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="10.5" fill="#374151">${escapeXml(node.label)}</text>
-</g>`
+</g>` }
     })
-    .join('\n')
+
+  // Panels (z < 0) paint behind the edges; icons & annotation text in front.
+  const bgNodeEls = nodeParts.filter((n) => n.z < 0).map((n) => n.el).join('\n')
+  const fgNodeEls = nodeParts.filter((n) => n.z >= 0).map((n) => n.el).join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
   <rect width="${W}" height="${H}" fill="${bgColor}"/>
+${bgNodeEls}
 ${edgeEls}
-${nodeEls}
+${fgNodeEls}
 </svg>`
 }
 
