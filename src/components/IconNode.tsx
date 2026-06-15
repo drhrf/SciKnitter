@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Handle, NodeResizer, Position, useReactFlow, type NodeProps } from '@xyflow/react'
 import { X } from 'lucide-react'
 import type { IconNodeData } from '../types'
 import { applyShapeStyle, isShapeNode } from '../utils/shapeStyle'
+import { scopeSvgIds } from '../utils/scopeSvg'
 
 export function IconNode({ id, data, selected }: NodeProps) {
   const nodeData = data as IconNodeData
@@ -32,6 +33,13 @@ export function IconNode({ id, data, selected }: NodeProps) {
       ),
     )
   }, [id, labelValue, setNodes])
+
+  const scopedSvg = useMemo(() => {
+    const raw = isShapeNode(nodeData.iconId)
+      ? applyShapeStyle(nodeData.svgContent, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth)
+      : nodeData.svgContent
+    return scopeSvgIds(raw, id)
+  }, [nodeData.svgContent, nodeData.iconId, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth, id])
 
   const handleStyle = 'w-4 h-4 !bg-blue-400 !border-2 !border-white !rounded-full shadow'
 
@@ -85,11 +93,7 @@ export function IconNode({ id, data, selected }: NodeProps) {
         <div
           className="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden pointer-events-none [&>svg]:w-full [&>svg]:h-full"
           style={{ transform: `rotate(${nodeData.rotation ?? 0}deg)`, transition: 'transform 0.15s' }}
-          dangerouslySetInnerHTML={{
-            __html: isShapeNode(nodeData.iconId)
-              ? applyShapeStyle(nodeData.svgContent, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth)
-              : nodeData.svgContent,
-          }}
+          dangerouslySetInnerHTML={{ __html: scopedSvg }}
         />
 
         {/* Label */}
