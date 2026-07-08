@@ -1,6 +1,6 @@
 # 🧬 SciKnitter
 
-> *A scientific diagram editor. Completely vibe coded. Zero regrets.*
+> *A scientific diagram editor. Completely vibe coded. No ragrets.*
 
 **[➜ Open the App](https://drhrf.github.io/SciKnitter/)**
 
