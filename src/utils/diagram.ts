@@ -228,35 +228,52 @@ TASK
 Create a diagram layout for:
 "${description}"
 
-CANVAS & NODE SIZES
-===================
-- Canvas: x: 50–1400, y: 50–1000
-- Icon nodes are exactly 110 px wide × 100 px tall. The (x, y) is the TOP-LEFT corner.
-  → To avoid overlap, icon centers must be ≥ 170 px apart in both x and y.
-  → Icon center = (x + 55, y + 50)
+GRID SYSTEM — use this instead of freehand coordinates
+=======================================================
+The canvas is a fixed 7×6 grid. Every icon occupies exactly one cell.
+LOOK UP pixel coordinates in these tables — do not compute offsets by hand:
+
+  COL_X (col → x):  0→50   1→240   2→430   3→620   4→810   5→1000   6→1190
+  ROW_Y (row → y):  0→50   1→200   2→350   3→500   4→650   5→800
+
+- Icon top-left = (COL_X[col], ROW_Y[row]). Icons are always 110×100.
+- Each cell has enough built-in gutter (80 px horizontal, 50 px vertical) that
+  icons in two different cells never overlap. You do NOT need to check pixel
+  spacing yourself — you only need to make sure no two icons share a cell.
 - Text/panel nodes: always set explicit "width" and "height".
-  Annotation text boxes: width 160–280, height 50–100.
-  Panel backgrounds: width and height large enough to surround all member icons
-  with ≥ 40 px padding on every side.
+  Annotation text boxes: width 160–280, height 50–100 (placement formula below).
+  Panel backgrounds: computed from a grid span — see PANEL BACKGROUNDS below.
 
 LAYOUT STRATEGY — follow these steps in order
 =============================================
 1. PLAN sections: identify 2–5 logical groups in the diagram.
-2. ASSIGN each group a screen region (e.g. top-left 400×300 block, center column, etc.).
-   Spread groups across the full canvas — use x up to 1300 and y up to 900.
-3. PLACE icons inside each region. Start from the top-left of the region and step
-   right/down in increments of 180 px so icons never overlap.
-4. ADD panels: for each section, output a text node with bgColor, borderColor, and
-   zIndex: -1 that encloses all member icons.
-5. ADD annotation text boxes ABOVE or BESIDE icons — never on top of them.
+2. BEFORE writing any JSON, write a short plain-text planning table — one line
+   per node, NOT inside a code fence:
+     id | group | col,row  (icons)          e.g.  n1 | Signaling | 0,0
+     id | group | colStart,rowStart-colEnd,rowEnd (panels)  e.g.  panel1 | Signaling | 0,0-1,1
+   Check your own table before moving on:
+     - No two icons share the same (col,row).
+     - Every panel's grid span fully contains all of its member icons' cells.
+     - No annotation box (see below) overlaps an icon box.
+3. PLACE icons: for each icon, look up (COL_X[col], ROW_Y[row]) directly.
+4. ADD panels: use the grid-span formula in PANEL BACKGROUNDS below.
+5. ADD annotation text boxes ABOVE or BESIDE icons — never on top of them
+   (see TEXT ANNOTATION PLACEMENT below).
 6. ADD edges last, choosing from arrow/blunt/dashed/bidirectional.
 
 PANEL BACKGROUNDS
 =================
-Use text nodes as coloured panel backgrounds to group related icons:
+Use text nodes as coloured panel backgrounds to group related icons. Compute
+the panel's box from its grid span (colStart,rowStart)-(colEnd,rowEnd):
+
+  x      = COL_X[colStart] - 40
+  y      = ROW_Y[rowStart] - 40
+  width  = (COL_X[colEnd] - COL_X[colStart]) + 110 + 80
+  height = (ROW_Y[rowEnd] - ROW_Y[rowStart]) + 100 + 80
+
   {
     "nodeType": "text", "id": "panel1", "text": "Panel Title",
-    "x": 60, "y": 60, "width": 400, "height": 260,
+    "x": 10, "y": 10, "width": 380, "height": 180,
     "bgColor": "#eff6ff", "borderColor": "#bfdbfe",
     "fontSize": 12, "fontWeight": "bold", "textAlign": "left",
     "zIndex": -1
@@ -274,6 +291,17 @@ ICON RULES
 - Use Servier icons only when BioArt has no suitable match
 - Only use iconId values that exactly match ids listed above — no guessing
 - Set zIndex: 0 (or omit) for regular icons; zIndex: 1 for key/highlighted icons
+- FALLBACK — if NONE of the icons above is a reasonable conceptual match for a
+  node, do NOT invent or guess an iconId. Instead emit that node as a labeled
+  text box placed at its intended grid cell:
+    {
+      "nodeType": "text", "id": "n5", "text": "Concept label",
+      "x": <COL_X[col]>, "y": <ROW_Y[row]>, "width": 130, "height": 70,
+      "borderColor": "#cbd5e1", "textAlign": "center", "fontWeight": "bold"
+    }
+  Do NOT set "bgColor" on these placeholder boxes — bgColor turns a text node
+  into a background panel (rendered behind everything), which is not what a
+  concept placeholder should look like.
 
 TEXT ANNOTATION PLACEMENT — CRITICAL
 =====================================
@@ -297,20 +325,30 @@ EDGE STYLES
 
 OUTPUT
 ======
-Return ONLY valid JSON — no markdown fences, no explanation, nothing else.
+First write your planning table from step 2 above as plain text (no code fence).
+Then, on its own, output ONLY the final JSON inside a single \`\`\`json code
+fence — nothing after the closing fence.
 
+Example planning table:
+  n1 | Signaling | 0,0
+  n2 | Signaling | 1,0
+  panel1 | Signaling | 0,0-1,0
+  ann1 | Signaling | (annotation, right of n2)
+
+\`\`\`json
 {
   "title": "string",
   "nodes": [
-    { "nodeType": "text", "id": "panel1", "text": "Section A", "x": 50, "y": 50, "width": 420, "height": 240, "bgColor": "#eff6ff", "borderColor": "#bfdbfe", "fontSize": 12, "fontWeight": "bold", "zIndex": -1 },
-    { "id": "n1", "iconId": "exact-id-from-list", "label": "Protein X", "x": 100, "y": 120 },
-    { "id": "n2", "iconId": "exact-id-from-list", "label": "Protein Y", "x": 280, "y": 120 },
-    { "nodeType": "text", "id": "ann1", "text": "Short annotation", "x": 520, "y": 130, "width": 200, "height": 60 }
+    { "nodeType": "text", "id": "panel1", "text": "Section A", "x": 10, "y": 10, "width": 380, "height": 180, "bgColor": "#eff6ff", "borderColor": "#bfdbfe", "fontSize": 12, "fontWeight": "bold", "zIndex": -1 },
+    { "id": "n1", "iconId": "exact-id-from-list", "label": "Protein X", "x": 50, "y": 50 },
+    { "id": "n2", "iconId": "exact-id-from-list", "label": "Protein Y", "x": 240, "y": 50 },
+    { "nodeType": "text", "id": "ann1", "text": "Short annotation", "x": 360, "y": 70, "width": 200, "height": 60 }
   ],
   "edges": [
     { "id": "e1", "from": "n1", "to": "n2", "style": "arrow" }
   ]
-}`
+}
+\`\`\``
 }
 
 const VALID_STYLES: EdgeStyle[] = ['arrow', 'blunt', 'dashed', 'bidirectional']

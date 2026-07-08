@@ -34,7 +34,7 @@ import { CustomEdge } from './CustomEdge'
 import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
 import { fetchServierSvgById } from '../services/servierIcons'
 import { sanitizeSvg } from '../services/bioartIcons'
-import { resolveTextOverlaps } from '../utils/resolveTextOverlaps'
+import { resolveLayoutOverlaps } from '../utils/resolveTextOverlaps'
 import type { DiagramExport, Icon, IconNodeData, TextNodeData } from '../types'
 
 export interface DiagramCanvasHandle {
@@ -128,7 +128,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       () => ({
         getSpec: (title) => rfToSpec(nodes, edges, title),
         loadSpec: (spec) => {
-          const rfNodes = resolveTextOverlaps(specToRFNodes(spec))
+          const rfNodes = resolveLayoutOverlaps(specToRFNodes(spec))
           setNodes(rfNodes)
           setEdges(specToRFEdges(spec))
 
