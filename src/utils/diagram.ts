@@ -315,13 +315,68 @@ Return ONLY valid JSON — no markdown fences, no explanation, nothing else.
 
 const VALID_STYLES: EdgeStyle[] = ['arrow', 'blunt', 'dashed', 'bidirectional']
 
-export function parseDiagramSpec(raw: string): DiagramExport {
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/m, '')
-    .replace(/\s*```\s*$/m, '')
-    .trim()
+// Isolates the JSON payload an LLM returned, tolerating deviations from the
+// "return ONLY JSON" instruction: a fenced code block (any language tag) with
+// prose before/after it, or prose with no fence at all. Braces inside string
+// literals are tracked so they don't throw off the outermost-object match.
+function extractJsonPayload(raw: string): string {
+  let s = raw.trim()
 
-  const parsed: unknown = JSON.parse(cleaned)
+  const fenced = s.match(/```[^\n]*\n?([\s\S]*?)```/)
+  if (fenced) s = fenced[1].trim()
+
+  const start = s.indexOf('{')
+  if (start === -1) return s
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+  for (let i = start; i < s.length; i++) {
+    const c = s[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (c === '\\') escaped = true
+      else if (c === '"') inString = false
+      continue
+    }
+    if (c === '"') inString = true
+    else if (c === '{') depth++
+    else if (c === '}') {
+      depth--
+      if (depth === 0) return s.slice(start, i + 1)
+    }
+  }
+  return s.slice(start)
+}
+
+// Best-effort repair for near-JSON some LLMs produce despite instructions:
+// trailing commas, unquoted object keys, and Python-style single-quoted strings.
+function repairJsonLenient(s: string): string {
+  let out = s.replace(/,(\s*[}\]])/g, '$1')
+  out = out.replace(/([{,]\s*)([A-Za-z_$][A-Za-z0-9_$]*)(\s*:)/g, '$1"$2"$3')
+  out = out.replace(
+    /([:,[{]\s*)'((?:[^'\\]|\\.)*)'(?=\s*[,:}\]])/g,
+    (_, pre: string, inner: string) => `${pre}"${inner.replace(/"/g, '\\"')}"`,
+  )
+  return out
+}
+
+export function parseDiagramSpec(raw: string): DiagramExport {
+  const payload = extractJsonPayload(raw)
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(payload)
+  } catch (firstErr) {
+    try {
+      parsed = JSON.parse(repairJsonLenient(payload))
+    } catch {
+      const msg = firstErr instanceof Error ? firstErr.message : String(firstErr)
+      throw new Error(
+        `Couldn't parse that as JSON (${msg}). Make sure you pasted only the JSON the LLM returned, with nothing else before or after it.`,
+      )
+    }
+  }
   if (typeof parsed !== 'object' || parsed === null) {
     throw new Error('Response is not a JSON object')
   }
