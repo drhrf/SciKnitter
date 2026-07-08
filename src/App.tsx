@@ -22,7 +22,7 @@ import { PropertiesPanel } from './components/PropertiesPanel'
 import { LLMWorkflowPanel } from './components/LLMWorkflowPanel'
 import { TEMPLATES, type Template } from './data/templates'
 import { parseDiagramSpec } from './utils/diagram'
-import { downloadFile, exportToSvg, exportToPng } from './utils/exportSvg'
+import { downloadFile } from './utils/exportImage'
 import type { DiagramExport, Icon } from './types'
 
 function slugify(s: string) {
@@ -77,16 +77,18 @@ export function App() {
 
   // ── Export / Save / Load ───────────────────────────────────────────────
 
-  function handleExportSvg() {
-    const spec = canvasRef.current?.getSpec(diagramTitle)
-    if (!spec) return
-    downloadFile(exportToSvg(spec, bgColorForExport(exportBg)), `${slugify(diagramTitle)}.svg`, 'image/svg+xml')
+  async function handleExportSvg() {
+    await canvasRef.current?.exportImage('svg', `${slugify(diagramTitle)}.svg`, {
+      bgColor: bgColorForExport(exportBg),
+      scale: 1,
+    })
   }
 
   async function handleExportPng() {
-    const spec = canvasRef.current?.getSpec(diagramTitle)
-    if (!spec) return
-    await exportToPng(exportToSvg(spec, bgColorForExport(exportBg)), `${slugify(diagramTitle)}.png`, pngScale)
+    await canvasRef.current?.exportImage('png', `${slugify(diagramTitle)}.png`, {
+      bgColor: bgColorForExport(exportBg),
+      scale: pngScale,
+    })
   }
 
   function handleSaveJson() {

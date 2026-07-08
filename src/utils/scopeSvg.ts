@@ -34,9 +34,13 @@ export function scopeSvgIds(svg: string, rawPrefix: string): string {
     out = out.replace(new RegExp(`href="#${escapeRe(id)}"`, 'g'), `href="#${prefix}-${id}"`)
   }
 
-  // 3. Scope CSS class selectors inside <style> blocks
+  // 3. Scope CSS class selectors inside <style> blocks. A real class selector
+  // can't start with a digit (per CSS syntax), but decimal numeric values
+  // like `stroke-width: 1.24px` or `.62px` also match a naive /\.[\w-]+/ —
+  // requiring a leading letter/underscore excludes those without excluding
+  // any real .cls-N selector.
   out = out.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (_, open, css, close) => {
-    const scoped = (css as string).replace(/\.([\w-]+)/g, (_m, cls) => `.${prefix}-${cls}`)
+    const scoped = (css as string).replace(/\.([a-zA-Z_][\w-]*)/g, (_m, cls) => `.${prefix}-${cls}`)
     return `${open}${scoped}${close}`
   })
 

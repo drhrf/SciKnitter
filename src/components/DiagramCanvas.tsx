@@ -18,6 +18,7 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  getViewportForBounds,
   BackgroundVariant,
   MarkerType,
   type Node,
@@ -35,7 +36,10 @@ import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
 import { fetchServierSvgById } from '../services/servierIcons'
 import { sanitizeSvg } from '../services/bioartIcons'
 import { resolveLayoutOverlaps } from '../utils/resolveTextOverlaps'
+import { captureElement, triggerDownload } from '../utils/exportImage'
 import type { DiagramExport, Icon, IconNodeData, TextNodeData } from '../types'
+
+const EXPORT_PADDING = 60
 
 export interface DiagramCanvasHandle {
   getSpec: (title: string) => DiagramExport
@@ -47,6 +51,7 @@ export interface DiagramCanvasHandle {
   copySelected: () => void
   paste: () => void
   duplicateSelected: () => void
+  exportImage: (format: 'png' | 'svg', filename: string, opts: { bgColor: string; scale: number }) => Promise<void>
 }
 
 interface DiagramCanvasProps {
@@ -89,7 +94,8 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
   function DiagramCanvas({ snapToGrid, isSelecting }, ref) {
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
-    const { screenToFlowPosition } = useReactFlow()
+    const { screenToFlowPosition, getNodesBounds } = useReactFlow()
+    const wrapperRef = useRef<HTMLDivElement>(null)
 
     const nodeTypes: NodeTypes = useMemo(() => ({ iconNode: IconNode, textNode: TextNode }), [])
     const edgeTypes: EdgeTypes = useMemo(() => ({ custom: CustomEdge }), [])
@@ -259,8 +265,42 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           }))
           setNodes(nds => [...nds.map(n => ({...n, selected: false})), ...newNodes])
         },
+        exportImage: async (format, filename, opts) => {
+          if (nodes.length === 0) return
+          const viewportEl = wrapperRef.current?.querySelector('.react-flow__viewport') as HTMLElement | null
+          if (!viewportEl) return
+
+          // Selection outlines / resize handles are part of the live DOM being
+          // captured — clear them first so the export shows a clean diagram,
+          // then wait a frame for the deselect to actually paint.
+          const hadSelection = nodes.some(n => n.selected) || edges.some(e => e.selected)
+          if (hadSelection) {
+            setNodes(nds => nds.map(n => (n.selected ? { ...n, selected: false } : n)))
+            setEdges(eds => eds.map(e => (e.selected ? { ...e, selected: false } : e)))
+            await new Promise(requestAnimationFrame)
+          }
+
+          const bounds = getNodesBounds(nodes)
+          const paddedBounds = {
+            x: bounds.x - EXPORT_PADDING,
+            y: bounds.y - EXPORT_PADDING,
+            width: bounds.width + EXPORT_PADDING * 2,
+            height: bounds.height + EXPORT_PADDING * 2,
+          }
+          const width = Math.max(1, Math.round(paddedBounds.width * opts.scale))
+          const height = Math.max(1, Math.round(paddedBounds.height * opts.scale))
+          const viewport = getViewportForBounds(paddedBounds, width, height, opts.scale, opts.scale, 0)
+
+          const dataUrl = await captureElement(
+            format,
+            viewportEl,
+            { width, height, transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})` },
+            opts.bgColor,
+          )
+          triggerDownload(dataUrl, filename)
+        },
       }),
-      [nodes, edges, setNodes, setEdges],
+      [nodes, edges, setNodes, setEdges, getNodesBounds],
     )
 
     const onConnect = useCallback(
@@ -401,7 +441,7 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
     }, [])
 
     return (
-      <div className="flex-1 h-full">
+      <div className="flex-1 h-full" ref={wrapperRef}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
