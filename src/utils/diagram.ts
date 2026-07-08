@@ -357,8 +357,19 @@ const VALID_STYLES: EdgeStyle[] = ['arrow', 'blunt', 'dashed', 'bidirectional']
 // "return ONLY JSON" instruction: a fenced code block (any language tag) with
 // prose before/after it, or prose with no fence at all. Braces inside string
 // literals are tracked so they don't throw off the outermost-object match.
+// Some editors/notes apps auto-convert straight quotes to "smart" typographic
+// quotes as you type or paste, which silently corrupts JSON (curly quotes
+// aren't valid string delimiters). Normalize them back before anything else —
+// this must run before fence/brace extraction, since that logic tracks
+// strings by looking for literal '"' characters.
+function normalizeSmartQuotes(s: string): string {
+  return s
+    .replace(/[“”‟″]/g, '"')
+    .replace(/[‘’‛′]/g, "'")
+}
+
 function extractJsonPayload(raw: string): string {
-  let s = raw.trim()
+  let s = normalizeSmartQuotes(raw.trim())
 
   const fenced = s.match(/```[^\n]*\n?([\s\S]*?)```/)
   if (fenced) s = fenced[1].trim()
