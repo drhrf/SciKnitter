@@ -13,50 +13,39 @@ const ARROW_HW = 5
 const BLUNT_HW = 8
 
 // ─── Edge routing ────────────────────────────────────────────────────────────
+//
+// Every icon/text node declares its handles in the same order — top, bottom,
+// left, right (see IconNode.tsx / TextNode.tsx) — and LLM-authored edges never
+// specify a sourceHandle/targetHandle. @xyflow/react resolves a handle-less
+// edge to the FIRST declared handle on each side (getHandle$1 in
+// @xyflow/system: "if no handleId is given, we use the first handle"), so
+// canvas always renders these edges as a bezier from the source's top-center
+// to the target's top-center, using @xyflow/react's default curvature (0.25)
+// bezier formula (getBezierPath / getControlWithCurvature). Reproducing that
+// exact anchor choice and formula here — instead of a "nearest side" heuristic
+// — is what makes the exported curve match the canvas curve.
+
+const BEZIER_CURVATURE = 0.25
+
+function calcControlOffset(distance: number, curvature = BEZIER_CURVATURE): number {
+  return distance >= 0 ? 0.5 * distance : curvature * 25 * Math.sqrt(-distance)
+}
 
 function routeEdge(
-  srcX: number, srcY: number, srcW: number, srcH: number,
-  tgtX: number, tgtY: number, tgtW: number, tgtH: number,
+  srcX: number, srcY: number, srcW: number,
+  tgtX: number, tgtY: number, tgtW: number,
   ox: number, oy: number,
 ) {
-  const srcCX = srcX + srcW / 2 - ox
-  const srcCY = srcY + srcH / 2 - oy
-  const tgtCX = tgtX + tgtW / 2 - ox
-  const tgtCY = tgtY + tgtH / 2 - oy
+  // Top-center anchor of each node, matching getHandlePosition() for Position.Top.
+  const sx = srcX + srcW / 2 - ox
+  const sy = srcY - oy
+  const tx = tgtX + tgtW / 2 - ox
+  const ty = tgtY - oy
 
-  const ddx = tgtCX - srcCX
-  const ddy = tgtCY - srcCY
-
-  let sx: number, sy: number, tx: number, ty: number
-  let cp1x: number, cp1y: number, cp2x: number, cp2y: number
-
-  if (Math.abs(ddx) >= Math.abs(ddy)) {
-    // Primarily horizontal — connect from the side edges
-    if (ddx >= 0) {
-      sx = srcX + srcW - ox; sy = srcCY
-      tx = tgtX - ox;        ty = tgtCY
-    } else {
-      sx = srcX - ox;        sy = srcCY
-      tx = tgtX + tgtW - ox; ty = tgtCY
-    }
-    const cpOff = Math.max(50, Math.abs(ddx) * 0.4)
-    const s = ddx >= 0 ? 1 : -1
-    cp1x = sx + cpOff * s; cp1y = sy
-    cp2x = tx - cpOff * s; cp2y = ty
-  } else {
-    // Primarily vertical — connect from top/bottom edges
-    if (ddy >= 0) {
-      sx = srcCX; sy = srcY + srcH - oy
-      tx = tgtCX; ty = tgtY - oy
-    } else {
-      sx = srcCX; sy = srcY - oy
-      tx = tgtCX; ty = tgtY + tgtH - oy
-    }
-    const cpOff = Math.max(50, Math.abs(ddy) * 0.4)
-    const s = ddy >= 0 ? 1 : -1
-    cp1x = sx; cp1y = sy + cpOff * s
-    cp2x = tx; cp2y = ty - cpOff * s
-  }
+  const cp1x = sx
+  const cp1y = sy - calcControlOffset(sy - ty)
+  const cp2x = tx
+  const cp2y = ty - calcControlOffset(ty - sy)
 
   // Unit tangent at END (direction of approach to tip): P2 → P3
   const ex = tx - cp2x; const ey = ty - cp2y
@@ -192,9 +181,7 @@ export function exportToSvg(spec: DiagramExport, bgColor = '#f8fafc'): string {
       if (!src || !tgt) return ''
 
       const srcW = src.nodeType === 'text' ? (src.width ?? 200) : (src.width ?? NODE_W)
-      const srcH = src.nodeType === 'text' ? (src.height ?? 60) : (src.height ?? NODE_H)
       const tgtW = tgt.nodeType === 'text' ? (tgt.width ?? 200) : (tgt.width ?? NODE_W)
-      const tgtH = tgt.nodeType === 'text' ? (tgt.height ?? 60) : (tgt.height ?? NODE_H)
 
       const strokeColor = edge.strokeColor ?? '#64748b'
       const strokeWidth = edge.strokeWidth ?? 2
@@ -202,7 +189,7 @@ export function exportToSvg(spec: DiagramExport, bgColor = '#f8fafc'): string {
       const isDashed       = edge.style === 'dashed'
       const isBidirectional = edge.style === 'bidirectional'
 
-      const route = routeEdge(src.x, src.y, srcW, srcH, tgt.x, tgt.y, tgtW, tgtH, ox, oy)
+      const route = routeEdge(src.x, src.y, srcW, tgt.x, tgt.y, tgtW, ox, oy)
 
       const dash = isDashed ? ` stroke-dasharray="6,4"` : ''
       const pathEl = `<path d="${route.pathD}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dash}/>`
@@ -228,15 +215,18 @@ export function exportToSvg(spec: DiagramExport, bgColor = '#f8fafc'): string {
     .join('\n')
 
   // ── Nodes ───────────────────────────────────────────────────────────────────
-  // Effective stacking mirrors specToRFNodes(): filled text nodes are panel
-  // backgrounds (z < 0) that must sit BEHIND the edges; icons and annotation
-  // text sit in front. SVG has no z-index — order is pure document order — so
-  // we partition the elements and emit panels, then edges, then everything else.
+  // Effective stacking mirrors specToRFNodes(): filled text nodes default to
+  // panel backgrounds (z < 0) that must sit BEHIND the edges, UNLESS an
+  // explicit zIndex says otherwise — a colored callout/highlight box (bgColor
+  // set but zIndex explicitly >= 0) must stay in front like any annotation,
+  // not be silently demoted to an immovable panel just for having a fill.
+  // SVG has no z-index — order is pure document order — so we partition the
+  // elements and emit panels, then edges, then everything else.
   const nodeParts = spec.nodes
     .map((node, nodeIdx): { z: number; el: string } => {
-      const z = node.nodeType === 'text'
-        ? (node.bgColor ? -1 : (node.zIndex ?? 2))
-        : (node.zIndex ?? 2)
+      const z = typeof node.zIndex === 'number'
+        ? node.zIndex
+        : (node.nodeType === 'text' && node.bgColor ? -1 : 2)
       if (node.nodeType === 'text') {
         const nx = node.x - ox
         const ny = node.y - oy
@@ -300,14 +290,24 @@ export function exportToSvg(spec: DiagramExport, bgColor = '#f8fafc'): string {
             viewBox: '0 0 80 80',
           }
 
-      const labelY   = nh - 4
-      const iconSize = Math.round(Math.min(nw, nh - 20) * 0.8)
-      const iconX    = Math.round((nw - iconSize) / 2)
+      const labelY = nh - 4
       const rotation = node.rotation ?? 0
+
+      // Match IconNode.tsx's actual flex layout (padding: 8px top, 6px sides,
+      // 4px bottom; a shrink-0 label row below a flex-1 icon area) instead of
+      // forcing a SQUARE icon viewport. Many BioArt icons are wide or tall,
+      // not square — squeezing them into a square box (the old iconSize×iconSize
+      // approach) under-scaled them relative to how they render in the app,
+      // where the icon's own <svg> fills the actual (non-square) flex box and
+      // its native aspect ratio is preserved within THAT rectangle.
+      const iconAreaX = 6
+      const iconAreaY = 8
+      const iconAreaW = Math.max(20, nw - 12)
+      const iconAreaH = Math.max(20, nh - 32)
 
       return { z, el: `<g transform="translate(${nx},${ny}) rotate(${rotation}, ${nw / 2}, ${nh / 2})">
   <rect width="${nw}" height="${nh}" rx="10" fill="${bgFill}" stroke="${bgFill === 'none' ? 'none' : '#e2e8f0'}" stroke-width="1.5"/>
-  <svg x="${iconX}" y="6" viewBox="${viewBox}" width="${iconSize}" height="${iconSize}" overflow="visible">${innerSvg}</svg>
+  <svg x="${iconAreaX}" y="${iconAreaY}" viewBox="${viewBox}" width="${iconAreaW}" height="${iconAreaH}" overflow="visible">${innerSvg}</svg>
   <text x="${nw / 2}" y="${labelY}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="10.5" fill="#374151">${escapeXml(node.label)}</text>
 </g>` }
     })

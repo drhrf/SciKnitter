@@ -34,9 +34,11 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
         textAlign: n.textAlign ?? 'left',
         rotation: n.rotation,
       }
-      // Panel backgrounds (bgColor set) always go behind edges (CSS z-index: 1).
-      // Annotation text boxes (no bgColor) default above edges at 2.
-      const zIndex = n.bgColor ? -1 : (n.zIndex ?? 2)
+      // An explicit zIndex always wins; only default to "bgColor implies a
+      // background panel" (behind edges) when zIndex is omitted — otherwise a
+      // colored callout box would be silently demoted to an immovable panel
+      // just for having a fill color.
+      const zIndex = typeof n.zIndex === 'number' ? n.zIndex : (n.bgColor ? -1 : 2)
       return {
         id: n.id,
         type: 'textNode',
@@ -285,6 +287,22 @@ Suggested panel colours (mix and match):
   Purple: bgColor "#faf5ff"  borderColor "#e9d5ff"
   Gray:   bgColor "#f8fafc"  borderColor "#e2e8f0"
 
+COLORED CALLOUT / HIGHLIGHT BOXES — NOT THE SAME AS A PANEL
+=============================================================
+A small colored box that highlights a finding (e.g. a pink box reading
+"↑ Obesity (OR 2.13)") is NOT a panel, even though it also uses bgColor.
+A text node with bgColor and NO explicit zIndex is assumed to be a full
+section panel — it will be pinned to the back of the diagram, rendered
+BEHIND every icon and arrow. For any colored box that is NOT a full section
+panel, you MUST explicitly set "zIndex": 2 so it stays in front:
+  {
+    "nodeType": "text", "id": "callout1", "text": "↑ Obesity (OR 2.13)",
+    "x": 610, "y": 260, "width": 220, "height": 80,
+    "bgColor": "#fecaca", "zIndex": 2
+  }
+Rule of thumb: bgColor + "zIndex": -1 → background panel (behind everything).
+              bgColor + "zIndex": 2  → foreground highlight box (in front).
+
 ICON RULES
 ==========
 - ALWAYS prefer NIH BioArt icons (primary source) for biological and scientific elements
@@ -460,8 +478,11 @@ export function parseDiagramSpec(raw: string): DiagramExport {
             ? (node.textAlign as 'left' | 'center' | 'right')
             : 'left',
           rotation: typeof node.rotation === 'number' ? node.rotation : undefined,
-          // Panels (bgColor) always -1; annotations default to 2
-          zIndex: node.bgColor ? -1 : (typeof node.zIndex === 'number' ? node.zIndex : 2),
+          // An explicit zIndex always wins. Only fall back to "bgColor implies
+          // a background panel" when zIndex is omitted entirely — a colored
+          // callout/highlight box (bgColor set, zIndex explicitly >= 0) must
+          // NOT be silently demoted to a background panel just for having a fill.
+          zIndex: typeof node.zIndex === 'number' ? node.zIndex : (node.bgColor ? -1 : 2),
         }
       }
 
