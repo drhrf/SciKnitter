@@ -196,7 +196,7 @@ function getCachedServierIcons(): Array<{ id: string; name: string; category: st
   }
 }
 
-export function generateLLMPrompt(description: string): string {
+function buildIconListingSection(): string {
   const allBuiltIn = getAllIcons()
   const shapeIcons = allBuiltIn.filter((i) => i.category === 'Shapes')
   const scientificIcons = allBuiltIn.filter((i) => i.category !== 'Shapes')
@@ -236,16 +236,103 @@ ${shapeIcons
     .map((i) => `  • ${i.id}  "${i.name}"`)
     .join('\n')}`
 
-  return `You are a scientific diagram layout assistant for SciKnitter.
-
-${bioartSection}
+  return `${bioartSection}
 
 ${servierSection ? servierSection + '\n' : ''}
-${builtInSection}
+${builtInSection}`
+}
+
+export type FigureType = 'pathway' | 'timeline' | 'protocol' | 'graphical-abstract'
+
+// The grid/panel/callout/JSON mechanics are identical across figure types —
+// only the PLANNING steps (how to decide where things go) differ enough to
+// be worth a dedicated section per type. Keeping one shared grid instead of
+// a different coordinate system per type means the rest of the prompt
+// (PANEL BACKGROUNDS, callouts, output schema) never has to branch.
+function buildLayoutStrategySection(figureType: FigureType): string {
+  if (figureType === 'timeline') {
+    return `LAYOUT STRATEGY — TIMELINE
+==========================
+1. Identify the chronological events or milestones (typically 3–6).
+2. Place them along a SINGLE ROW, left to right in time order — row 2
+   (ROW_Y[2]=350) is a good default. Event 1 at col 0, event 2 at col 1, etc.
+   — one event per column, using the same COL_X/ROW_Y lookup as any icon.
+3. BEFORE writing any JSON, write a short plain-text planning table (NOT in
+   a code fence): id | event name | col,row — e.g. n1 | Baseline | 0,2
+4. Connect consecutive events with "arrow" edges, and label each edge with
+   the date/timepoint/duration of that transition (e.g. "Day 7", "Week 2",
+   "2 hr post-treatment") — the edge labels ARE the timeline's time axis.
+5. If the sequence is cyclical (returns to the start), add one final
+   "dashed" edge from the last event back to the first, labeled "repeats".
+6. Use annotations sparingly — at most one per event, placed ABOVE it (see
+   TEXT ANNOTATION PLACEMENT), only for a detail that won't fit in the label.`
+  }
+
+  if (figureType === 'protocol') {
+    return `LAYOUT STRATEGY — PROTOCOL / FLOWCHART
+=======================================
+1. Break the procedure into 3–7 sequential steps.
+2. Place steps in a SINGLE COLUMN, top to bottom — col 2 (COL_X[2]=430) is a
+   good default. Step 1 at row 0, step 2 at row 1, etc. Number each label
+   ("1. Seed cells", "2. Incubate 37°C", "3. Passage", ...).
+3. BEFORE writing any JSON, write a short plain-text planning table (NOT in
+   a code fence): id | step | col,row — e.g. n1 | 1. Seed cells | 2,0
+4. For a DECISION point, use iconId "shape-diamond" and branch it into TWO
+   "arrow"/"blunt" edges going to two different cells (e.g. one column to
+   the left, one to the right, both one row down) — label each branch edge
+   with the condition ("yes"/"no", or the specific outcome).
+5. Connect steps in order with "arrow" edges. Use "shape-x-mark" for a step
+   that represents failure/rejection/a blocked outcome.
+6. Keep annotations minimal — the step labels should carry most of the
+   information; only add a text box for something that won't fit in a label.`
+  }
+
+  if (figureType === 'graphical-abstract') {
+    return `LAYOUT STRATEGY — GRAPHICAL ABSTRACT
+=====================================
+1. Identify 2–4 major sections of the story (e.g. "Trigger", "Mechanism",
+   "Outcome") — each becomes one panel.
+2. Give each panel a 1–2 column grid span (see PANEL BACKGROUNDS below),
+   placed side by side along row 0 if you have 2–3 panels, or in a 2×2
+   arrangement across two rows if you have 4.
+3. BEFORE writing any JSON, write a short plain-text planning table (NOT in
+   a code fence): id | panel | col,row (icons) or colStart,rowStart-colEnd,rowEnd (panels).
+4. Place 2–3 icons inside each panel's own cells (see GRID SYSTEM).
+5. Connect the LAST icon of one panel to the FIRST icon of the next panel
+   with an "arrow" edge, so the panels visibly flow into each other.
+6. Add exactly ONE bold colored callout box summarizing the key finding or
+   take-home message, spanning the full width below (or beside) the panels
+   — see COLORED CALLOUT / HIGHLIGHT BOXES below. This callout is the single
+   most important line of the whole figure — make it concise and specific
+   (e.g. "↑ Inflammation drives tissue damage", not "Summary").`
+  }
+
+  return `LAYOUT STRATEGY — follow these steps in order
+=============================================
+1. PLAN sections: identify 2–5 logical groups in the diagram.
+2. BEFORE writing any JSON, write a short plain-text planning table — one line
+   per node, NOT inside a code fence:
+     id | group | col,row  (icons)          e.g.  n1 | Signaling | 0,0
+     id | group | colStart,rowStart-colEnd,rowEnd (panels)  e.g.  panel1 | Signaling | 0,0-1,1
+   Check your own table before moving on:
+     - No two icons share the same (col,row).
+     - Every panel's grid span fully contains all of its member icons' cells.
+     - No annotation box (see below) overlaps an icon box.
+3. PLACE icons: for each icon, look up (COL_X[col], ROW_Y[row]) directly.
+4. ADD panels: use the grid-span formula in PANEL BACKGROUNDS below.
+5. ADD annotation text boxes ABOVE or BESIDE icons — never on top of them
+   (see TEXT ANNOTATION PLACEMENT below).
+6. ADD edges last, choosing from arrow/blunt/dashed/bidirectional.`
+}
+
+export function generateLLMPrompt(description: string, figureType: FigureType = 'pathway'): string {
+  return `You are a scientific diagram layout assistant for SciKnitter.
+
+${buildIconListingSection()}
 
 TASK
 ====
-Create a diagram layout for:
+Create a ${figureType === 'pathway' ? 'diagram' : figureType} layout for:
 "${description}"
 
 GRID SYSTEM — use this instead of freehand coordinates
@@ -264,22 +351,7 @@ LOOK UP pixel coordinates in these tables — do not compute offsets by hand:
   Annotation text boxes: width 160–280, height 50–100 (placement formula below).
   Panel backgrounds: computed from a grid span — see PANEL BACKGROUNDS below.
 
-LAYOUT STRATEGY — follow these steps in order
-=============================================
-1. PLAN sections: identify 2–5 logical groups in the diagram.
-2. BEFORE writing any JSON, write a short plain-text planning table — one line
-   per node, NOT inside a code fence:
-     id | group | col,row  (icons)          e.g.  n1 | Signaling | 0,0
-     id | group | colStart,rowStart-colEnd,rowEnd (panels)  e.g.  panel1 | Signaling | 0,0-1,1
-   Check your own table before moving on:
-     - No two icons share the same (col,row).
-     - Every panel's grid span fully contains all of its member icons' cells.
-     - No annotation box (see below) overlaps an icon box.
-3. PLACE icons: for each icon, look up (COL_X[col], ROW_Y[row]) directly.
-4. ADD panels: use the grid-span formula in PANEL BACKGROUNDS below.
-5. ADD annotation text boxes ABOVE or BESIDE icons — never on top of them
-   (see TEXT ANNOTATION PLACEMENT below).
-6. ADD edges last, choosing from arrow/blunt/dashed/bidirectional.
+${buildLayoutStrategySection(figureType)}
 
 PANEL BACKGROUNDS
 =================

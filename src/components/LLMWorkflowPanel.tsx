@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { X, Copy, Check, Wand2, ChevronRight, AlertCircle } from 'lucide-react'
-import { generateLLMPrompt, parseDiagramSpec } from '../utils/diagram'
+import { generateLLMPrompt, parseDiagramSpec, type FigureType } from '../utils/diagram'
 import type { DiagramExport } from '../types'
 
 interface LLMWorkflowPanelProps {
@@ -10,9 +10,17 @@ interface LLMWorkflowPanelProps {
 
 type Step = 1 | 2 | 3
 
+const FIGURE_TYPES: { value: FigureType; label: string; hint: string }[] = [
+  { value: 'pathway', label: 'Pathway', hint: 'Icons grouped by section, connected by arrows' },
+  { value: 'timeline', label: 'Timeline', hint: 'Chronological events left to right' },
+  { value: 'protocol', label: 'Protocol', hint: 'Numbered steps top to bottom, with decisions' },
+  { value: 'graphical-abstract', label: 'Graphical Abstract', hint: 'Multi-panel story with a key-finding callout' },
+]
+
 export function LLMWorkflowPanel({ onClose, onLoad }: LLMWorkflowPanelProps) {
   const [step, setStep] = useState<Step>(1)
   const [description, setDescription] = useState('')
+  const [figureType, setFigureType] = useState<FigureType>('pathway')
   const [prompt, setPrompt] = useState('')
   const [response, setResponse] = useState('')
   const [copied, setCopied] = useState(false)
@@ -21,7 +29,7 @@ export function LLMWorkflowPanel({ onClose, onLoad }: LLMWorkflowPanelProps) {
   function handleGeneratePrompt() {
     const d = description.trim()
     if (!d) return
-    setPrompt(generateLLMPrompt(d))
+    setPrompt(generateLLMPrompt(d, figureType))
     setStep(2)
   }
 
@@ -99,6 +107,22 @@ export function LLMWorkflowPanel({ onClose, onLoad }: LLMWorkflowPanelProps) {
               rows={3}
               className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {FIGURE_TYPES.map((ft) => (
+                <button
+                  key={ft.value}
+                  onClick={() => setFigureType(ft.value)}
+                  title={ft.hint}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border text-left transition-colors ${
+                    figureType === ft.value
+                      ? 'bg-purple-500 text-white border-purple-500'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {ft.label}
+                </button>
+              ))}
+            </div>
             <button
               onClick={handleGeneratePrompt}
               disabled={!description.trim()}
