@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import type { IconNodeData } from '../types'
 import { applyShapeStyle, isShapeNode } from '../utils/shapeStyle'
 import { scopeSvgIds } from '../utils/scopeSvg'
+import { RotateHandle } from './RotateHandle'
 
 export function IconNode({ id, data, selected }: NodeProps) {
   const nodeData = data as IconNodeData
@@ -36,10 +37,16 @@ export function IconNode({ id, data, selected }: NodeProps) {
 
   const scopedSvg = useMemo(() => {
     const raw = isShapeNode(nodeData.iconId)
-      ? applyShapeStyle(nodeData.svgContent, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth)
+      ? applyShapeStyle(nodeData.svgContent, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth, nodeData.cornerRadius)
       : nodeData.svgContent
     return scopeSvgIds(raw, id)
-  }, [nodeData.svgContent, nodeData.iconId, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth, id])
+  }, [nodeData.svgContent, nodeData.iconId, nodeData.shapeStrokeColor, nodeData.shapeStrokeWidth, nodeData.cornerRadius, id])
+
+  const bgFill = nodeData.bgColor === 'transparent' || !nodeData.bgColor
+    ? 'transparent'
+    : nodeData.gradientTo
+      ? `linear-gradient(135deg, ${nodeData.bgColor}, ${nodeData.gradientTo})`
+      : nodeData.bgColor
 
   const handleStyle = 'w-4 h-4 !bg-blue-400 !border-2 !border-white !rounded-full shadow'
 
@@ -60,12 +67,15 @@ export function IconNode({ id, data, selected }: NodeProps) {
       <Handle id="left" type="source" position={Position.Left} className={handleStyle} />
       <Handle id="right" type="source" position={Position.Right} className={handleStyle} />
 
+      {selected && <RotateHandle nodeId={id} rotation={nodeData.rotation ?? 0} />}
+
       <div
         className="relative flex flex-col items-center w-full h-full rounded-xl cursor-default"
         style={{
           padding: '8px 6px 4px',
           boxSizing: 'border-box',
-          background: nodeData.bgColor === 'transparent' ? 'transparent' : (nodeData.bgColor || 'white'),
+          background: bgFill,
+          opacity: nodeData.opacity ?? 1,
           borderRadius: 12,
           boxShadow: nodeData.bgColor === 'transparent'
             ? 'none'

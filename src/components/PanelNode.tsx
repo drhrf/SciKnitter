@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Handle, NodeResizer, Position, useReactFlow, type NodeProps } from '@xyflow/react'
 import type { TextNodeData } from '../types'
+import { RotateHandle } from './RotateHandle'
 
 // Renders the same on-disk shape as TextNode (nodeType:'text' + bgColor +
 // zIndex:-1 — see diagram.ts's specToRFNodes) but as its own React Flow node
@@ -14,6 +15,11 @@ export function PanelNode({ id, data, selected }: NodeProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleStyle = 'w-4 h-4 !bg-blue-400 !border-2 !border-white !rounded-full shadow'
+  const bgFill = !nodeData.bgColor
+    ? 'transparent'
+    : nodeData.gradientTo
+      ? `linear-gradient(135deg, ${nodeData.bgColor}, ${nodeData.gradientTo})`
+      : nodeData.bgColor
 
   useEffect(() => {
     if (editing && textareaRef.current) {
@@ -37,14 +43,17 @@ export function PanelNode({ id, data, selected }: NodeProps) {
       <Handle id="left" type="source" position={Position.Left} className={handleStyle} />
       <Handle id="right" type="source" position={Position.Right} className={handleStyle} />
 
+      {selected && <RotateHandle nodeId={id} rotation={nodeData.rotation ?? 0} />}
+
       <div
         className="w-full h-full overflow-hidden"
         style={{
           transform: `rotate(${nodeData.rotation ?? 0}deg)`,
           transformOrigin: 'center center',
-          background: nodeData.bgColor || 'transparent',
+          background: bgFill,
+          opacity: nodeData.opacity ?? 1,
           border: nodeData.borderColor ? `1.5px solid ${nodeData.borderColor}` : 'none',
-          borderRadius: 10,
+          borderRadius: nodeData.cornerRadius ?? 10,
           padding: '8px 10px',
           boxSizing: 'border-box',
           outline: selected ? '2px solid #3b82f6' : '1px dashed transparent',
@@ -75,7 +84,7 @@ export function PanelNode({ id, data, selected }: NodeProps) {
               color: nodeData.textColor || '#1e293b',
               textAlign: nodeData.textAlign ?? 'left',
               lineHeight: 1.4,
-              fontFamily: 'inherit',
+              fontFamily: nodeData.fontFamily || 'inherit',
             }}
           />
         ) : (
@@ -88,6 +97,7 @@ export function PanelNode({ id, data, selected }: NodeProps) {
               color: nodeData.textColor || '#1e293b',
               textAlign: nodeData.textAlign ?? 'left',
               lineHeight: 1.4,
+              fontFamily: nodeData.fontFamily || 'inherit',
             }}
           >
             {nodeData.text || (

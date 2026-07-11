@@ -14,6 +14,14 @@ import type { EdgeStyle, IconNodeData, TextNodeData } from '../types'
 import { trimSvgWhitespace } from '../utils/cropSvg'
 import { applyShapeStyle, isShapeNode } from '../utils/shapeStyle'
 
+// OS-safe stacks only — no webfont fetch, keeps the app fully client-side/free.
+const FONT_FAMILIES: { value: string; label: string }[] = [
+  { value: '', label: 'Default' },
+  { value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', label: 'Sans-serif' },
+  { value: 'Georgia, Cambria, "Times New Roman", Times, serif', label: 'Serif' },
+  { value: '"SF Mono", Monaco, Consolas, "Courier New", monospace', label: 'Monospace' },
+]
+
 const EDGE_STYLES: { value: EdgeStyle; label: string; description: string }[] = [
   { value: 'arrow', label: '→ Arrow', description: 'Activation / positive regulation' },
   { value: 'blunt', label: '⊣ Blunt', description: 'Inhibition / negative regulation' },
@@ -306,6 +314,20 @@ export function PropertiesPanel() {
             </div>
           </div>
 
+          {/* Font family */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Font</label>
+            <select
+              value={d.fontFamily || ''}
+              onChange={(e) => patchNodeData(selectedNode.id, { fontFamily: e.target.value || undefined })}
+              className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              {FONT_FAMILIES.map((f) => (
+                <option key={f.label} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Background — purely cosmetic here; a colored text box stays a
               normal foreground annotation. Use "Convert to panel" below to
               turn it into an immovable background region instead. */}
@@ -327,6 +349,53 @@ export function PropertiesPanel() {
               />
               <span className="text-xs text-gray-400">{hasBg ? 'color' : 'none'}</span>
             </div>
+            {hasBg && (
+              <div className="flex items-center gap-2 mt-1.5">
+                <input
+                  type="checkbox"
+                  checked={!!d.gradientTo}
+                  onChange={(e) => patchNodeData(selectedNode.id, { gradientTo: e.target.checked ? '#a5b4fc' : undefined })}
+                  className="rounded"
+                />
+                <input
+                  type="color"
+                  value={d.gradientTo || '#a5b4fc'}
+                  disabled={!d.gradientTo}
+                  onChange={(e) => patchNodeData(selectedNode.id, { gradientTo: e.target.value })}
+                  className={`w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5 ${!d.gradientTo ? 'opacity-40 cursor-not-allowed' : ''}`}
+                />
+                <span className="text-xs text-gray-400">Gradient</span>
+              </div>
+            )}
+          </div>
+
+          {/* Corner radius */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-600 shrink-0">Corners</label>
+            <input
+              type="range"
+              min={0}
+              max={40}
+              value={d.cornerRadius ?? 6}
+              onChange={(e) => patchNodeData(selectedNode.id, { cornerRadius: Number(e.target.value) })}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-400 w-6 text-right">{d.cornerRadius ?? 6}</span>
+          </div>
+
+          {/* Opacity */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-600 shrink-0">Opacity</label>
+            <input
+              type="range"
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={d.opacity ?? 1}
+              onChange={(e) => patchNodeData(selectedNode.id, { opacity: Number(e.target.value) })}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-400 w-8 text-right">{Math.round((d.opacity ?? 1) * 100)}%</span>
           </div>
 
           {/* Border */}
@@ -500,6 +569,20 @@ export function PropertiesPanel() {
             </div>
           </div>
 
+          {/* Font family */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Font</label>
+            <select
+              value={d.fontFamily || ''}
+              onChange={(e) => patchNodeData(selectedNode.id, { fontFamily: e.target.value || undefined })}
+              className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              {FONT_FAMILIES.map((f) => (
+                <option key={f.label} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Fill — unchecking turns this back into a plain text box, since a
               panel is defined by having a background. */}
           <div>
@@ -524,6 +607,51 @@ export function PropertiesPanel() {
               />
               <span className="text-xs text-gray-400">color</span>
             </div>
+            <div className="flex items-center gap-2 mt-1.5">
+              <input
+                type="checkbox"
+                checked={!!d.gradientTo}
+                onChange={(e) => patchNodeData(selectedNode.id, { gradientTo: e.target.checked ? '#dbeafe' : undefined })}
+                className="rounded"
+              />
+              <input
+                type="color"
+                value={d.gradientTo || '#dbeafe'}
+                disabled={!d.gradientTo}
+                onChange={(e) => patchNodeData(selectedNode.id, { gradientTo: e.target.value })}
+                className={`w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5 ${!d.gradientTo ? 'opacity-40 cursor-not-allowed' : ''}`}
+              />
+              <span className="text-xs text-gray-400">Gradient</span>
+            </div>
+          </div>
+
+          {/* Corner radius */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-600 shrink-0">Corners</label>
+            <input
+              type="range"
+              min={0}
+              max={40}
+              value={d.cornerRadius ?? 10}
+              onChange={(e) => patchNodeData(selectedNode.id, { cornerRadius: Number(e.target.value) })}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-400 w-6 text-right">{d.cornerRadius ?? 10}</span>
+          </div>
+
+          {/* Opacity */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-600 shrink-0">Opacity</label>
+            <input
+              type="range"
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={d.opacity ?? 1}
+              onChange={(e) => patchNodeData(selectedNode.id, { opacity: Number(e.target.value) })}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-400 w-8 text-right">{Math.round((d.opacity ?? 1) * 100)}%</span>
           </div>
 
           {/* Border */}
@@ -718,6 +846,21 @@ export function PropertiesPanel() {
                   />
                   <span className="text-xs text-gray-400">px thick</span>
                 </div>
+                {(nodeData.iconId === 'shape-rect' || nodeData.iconId === 'shape-rect-rounded') && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={0}
+                      max={40}
+                      value={nodeData.cornerRadius ?? (nodeData.iconId === 'shape-rect-rounded' ? 12 : 0)}
+                      onChange={(e) => patchNodeData(selectedNode.id, { cornerRadius: Number(e.target.value) })}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-gray-400 w-6 text-right">
+                      {nodeData.cornerRadius ?? (nodeData.iconId === 'shape-rect-rounded' ? 12 : 0)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -737,16 +880,49 @@ export function PropertiesPanel() {
               <span className="text-xs text-gray-500">Transparent</span>
             </div>
             {nodeData.bgColor !== 'transparent' && (
-              <div className="flex items-center gap-2 mt-1.5">
-                <input
-                  type="color"
-                  value={nodeData.bgColor || '#ffffff'}
-                  onChange={(e) => patchNodeData(selectedNode.id, { bgColor: e.target.value })}
-                  className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
-                />
-                <span className="text-xs text-gray-400">Fill color</span>
-              </div>
+              <>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <input
+                    type="color"
+                    value={nodeData.bgColor || '#ffffff'}
+                    onChange={(e) => patchNodeData(selectedNode.id, { bgColor: e.target.value })}
+                    className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
+                  />
+                  <span className="text-xs text-gray-400">Fill color</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <input
+                    type="checkbox"
+                    checked={!!nodeData.gradientTo}
+                    onChange={(e) => patchNodeData(selectedNode.id, { gradientTo: e.target.checked ? '#e0e7ff' : undefined })}
+                    className="rounded"
+                  />
+                  <input
+                    type="color"
+                    value={nodeData.gradientTo || '#e0e7ff'}
+                    disabled={!nodeData.gradientTo}
+                    onChange={(e) => patchNodeData(selectedNode.id, { gradientTo: e.target.value })}
+                    className={`w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5 ${!nodeData.gradientTo ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  />
+                  <span className="text-xs text-gray-400">Gradient</span>
+                </div>
+              </>
             )}
+          </div>
+
+          {/* Opacity */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-600 shrink-0">Opacity</label>
+            <input
+              type="range"
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={nodeData.opacity ?? 1}
+              onChange={(e) => patchNodeData(selectedNode.id, { opacity: Number(e.target.value) })}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-400 w-8 text-right">{Math.round((nodeData.opacity ?? 1) * 100)}%</span>
           </div>
 
           {/* Layer order */}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Handle, NodeResizer, Position, useReactFlow, type NodeProps } from '@xyflow/react'
 import type { TextNodeData } from '../types'
+import { RotateHandle } from './RotateHandle'
 
 export function TextNode({ id, data, selected }: NodeProps) {
   const nodeData = data as TextNodeData
@@ -9,6 +10,11 @@ export function TextNode({ id, data, selected }: NodeProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleStyle = 'w-4 h-4 !bg-blue-400 !border-2 !border-white !rounded-full shadow'
+  const bgFill = !nodeData.bgColor
+    ? 'transparent'
+    : nodeData.gradientTo
+      ? `linear-gradient(135deg, ${nodeData.bgColor}, ${nodeData.gradientTo})`
+      : nodeData.bgColor
 
   useEffect(() => {
     if (editing && textareaRef.current) {
@@ -32,14 +38,17 @@ export function TextNode({ id, data, selected }: NodeProps) {
       <Handle id="left" type="source" position={Position.Left} className={handleStyle} />
       <Handle id="right" type="source" position={Position.Right} className={handleStyle} />
 
+      {selected && <RotateHandle nodeId={id} rotation={nodeData.rotation ?? 0} />}
+
       <div
         className="w-full h-full overflow-hidden"
         style={{
           transform: `rotate(${nodeData.rotation ?? 0}deg)`,
           transformOrigin: 'center center',
-          background: nodeData.bgColor || 'transparent',
+          background: bgFill,
+          opacity: nodeData.opacity ?? 1,
           border: nodeData.borderColor ? `1.5px solid ${nodeData.borderColor}` : 'none',
-          borderRadius: 6,
+          borderRadius: nodeData.cornerRadius ?? 6,
           padding: '6px 8px',
           boxSizing: 'border-box',
           outline: selected ? '2px solid #3b82f6' : '1px solid #e2e8f0',
@@ -70,7 +79,7 @@ export function TextNode({ id, data, selected }: NodeProps) {
               color: nodeData.textColor || '#1e293b',
               textAlign: nodeData.textAlign ?? 'left',
               lineHeight: 1.5,
-              fontFamily: 'inherit',
+              fontFamily: nodeData.fontFamily || 'inherit',
             }}
           />
         ) : (
@@ -83,6 +92,7 @@ export function TextNode({ id, data, selected }: NodeProps) {
               color: nodeData.textColor || '#1e293b',
               textAlign: nodeData.textAlign ?? 'left',
               lineHeight: 1.5,
+              fontFamily: nodeData.fontFamily || 'inherit',
               cursor: 'default',
             }}
           >

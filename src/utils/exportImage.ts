@@ -1,4 +1,17 @@
-import { toPng, toSvg } from 'html-to-image'
+import { toPng, toSvg, toBlob } from 'html-to-image'
+
+function captureOptions(style: { width: number; height: number; transform: string }, bgColor: string) {
+  return {
+    backgroundColor: bgColor === 'none' ? undefined : bgColor,
+    width: style.width,
+    height: style.height,
+    style: {
+      width: `${style.width}px`,
+      height: `${style.height}px`,
+      transform: style.transform,
+    },
+  }
+}
 
 // Rasterizes the ACTUAL rendered `.react-flow__viewport` DOM node (via
 // html-to-image) instead of reconstructing the diagram from scratch. A
@@ -11,17 +24,20 @@ export async function captureElement(
   style: { width: number; height: number; transform: string },
   bgColor: string,
 ): Promise<string> {
-  const options = {
-    backgroundColor: bgColor === 'none' ? undefined : bgColor,
-    width: style.width,
-    height: style.height,
-    style: {
-      width: `${style.width}px`,
-      height: `${style.height}px`,
-      transform: style.transform,
-    },
-  }
+  const options = captureOptions(style, bgColor)
   return format === 'png' ? toPng(el, options) : toSvg(el, options)
+}
+
+export async function captureBlob(
+  el: HTMLElement,
+  style: { width: number; height: number; transform: string },
+  bgColor: string,
+): Promise<Blob | null> {
+  return toBlob(el, captureOptions(style, bgColor))
+}
+
+export async function copyBlobToClipboard(blob: Blob): Promise<void> {
+  await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
 }
 
 export function triggerDownload(dataUrl: string, filename: string) {

@@ -33,6 +33,10 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
         borderColor: n.borderColor ?? '',
         textAlign: n.textAlign ?? 'left',
         rotation: n.rotation,
+        fontFamily: n.fontFamily,
+        opacity: n.opacity,
+        cornerRadius: n.cornerRadius,
+        gradientTo: n.gradientTo,
       }
       // An explicit zIndex always wins; only default to "bgColor implies a
       // background panel" (behind edges) when zIndex is omitted — otherwise a
@@ -63,6 +67,9 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
       rotation: n.rotation,
       shapeStrokeColor: n.shapeStrokeColor,
       shapeStrokeWidth: n.shapeStrokeWidth,
+      opacity: n.opacity,
+      cornerRadius: n.cornerRadius,
+      gradientTo: n.gradientTo,
     }
     return {
       id: n.id,
@@ -115,6 +122,10 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
           textAlign: d.textAlign,
           rotation: d.rotation !== undefined ? d.rotation : undefined,
           zIndex: n.zIndex !== undefined ? n.zIndex : undefined,
+          fontFamily: d.fontFamily,
+          opacity: d.opacity,
+          cornerRadius: d.cornerRadius,
+          gradientTo: d.gradientTo,
         }
       }
       const d = n.data as IconNodeData
@@ -133,6 +144,9 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
         shapeStrokeColor: d.shapeStrokeColor,
         shapeStrokeWidth: d.shapeStrokeWidth,
         zIndex: n.zIndex !== undefined ? n.zIndex : undefined,
+        opacity: d.opacity,
+        cornerRadius: d.cornerRadius,
+        gradientTo: d.gradientTo,
       }
     }),
     edges: edges.map((e) => {
@@ -487,6 +501,10 @@ export function parseDiagramSpec(raw: string): DiagramExport {
           // callout/highlight box (bgColor set, zIndex explicitly >= 0) must
           // NOT be silently demoted to a background panel just for having a fill.
           zIndex: typeof node.zIndex === 'number' ? node.zIndex : (node.bgColor ? -1 : 2),
+          fontFamily: typeof node.fontFamily === 'string' ? node.fontFamily : undefined,
+          opacity: typeof node.opacity === 'number' ? node.opacity : undefined,
+          cornerRadius: typeof node.cornerRadius === 'number' ? node.cornerRadius : undefined,
+          gradientTo: typeof node.gradientTo === 'string' ? node.gradientTo : undefined,
         }
       }
 
@@ -499,7 +517,14 @@ export function parseDiagramSpec(raw: string): DiagramExport {
         width: node.width ? Number(node.width) : undefined,
         height: node.height ? Number(node.height) : undefined,
         bgColor: typeof node.bgColor === 'string' ? node.bgColor : undefined,
+        rotation: typeof node.rotation === 'number' ? node.rotation : undefined,
+        svgContent: typeof node.svgContent === 'string' ? node.svgContent : undefined,
+        shapeStrokeColor: typeof node.shapeStrokeColor === 'string' ? node.shapeStrokeColor : undefined,
+        shapeStrokeWidth: typeof node.shapeStrokeWidth === 'number' ? node.shapeStrokeWidth : undefined,
         zIndex: typeof node.zIndex === 'number' ? node.zIndex : undefined,
+        opacity: typeof node.opacity === 'number' ? node.opacity : undefined,
+        cornerRadius: typeof node.cornerRadius === 'number' ? node.cornerRadius : undefined,
+        gradientTo: typeof node.gradientTo === 'string' ? node.gradientTo : undefined,
       }
     }),
     edges: (obj.edges as unknown[]).map((e, i) => {

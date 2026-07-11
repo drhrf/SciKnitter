@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import {
+  Check,
+  ClipboardCopy,
   Download,
   FileImage,
   FileJson,
@@ -48,6 +50,7 @@ export function App() {
   const [diagramTitle, setDiagramTitle] = useState('Untitled Diagram')
   const [pngScale, setPngScale] = useState(2)
   const [exportBg, setExportBg] = useState<'canvas' | 'white' | 'transparent'>('white')
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle')
 
   // Keyboard shortcuts: V = select, H/Escape = pan, Ctrl+Z = undo, Ctrl+Y/Ctrl+Shift+Z = redo,
   // Ctrl+C = copy, Ctrl+V = paste, Ctrl+D = duplicate
@@ -99,6 +102,17 @@ export function App() {
       bgColor: bgColorForExport(exportBg),
       scale: pngScale,
     })
+  }
+
+  async function handleCopyImage() {
+    setCopyStatus('copying')
+    try {
+      const ok = await canvasRef.current?.copyImageToClipboard(bgColorForExport(exportBg))
+      setCopyStatus(ok ? 'copied' : 'error')
+    } catch {
+      setCopyStatus('error')
+    }
+    setTimeout(() => setCopyStatus('idle'), 1800)
   }
 
   function handleSaveJson() {
@@ -364,6 +378,25 @@ export function App() {
             <option value={8}>8× hi-res</option>
           </select>
         </div>
+
+        {/* Copy image to clipboard */}
+        <button
+          onClick={handleCopyImage}
+          disabled={copyStatus === 'copying'}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-colors disabled:opacity-50 ${
+            copyStatus === 'copied'
+              ? 'bg-green-50 text-green-700 border-green-200'
+              : copyStatus === 'error'
+                ? 'bg-red-50 text-red-700 border-red-200'
+                : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+          }`}
+          title="Copy diagram as image to clipboard"
+        >
+          {copyStatus === 'copied' ? <Check className="w-3.5 h-3.5" /> : <ClipboardCopy className="w-3.5 h-3.5" />}
+          <span className="hidden lg:inline">
+            {copyStatus === 'copying' ? 'Copying…' : copyStatus === 'copied' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy'}
+          </span>
+        </button>
 
         {/* Save JSON */}
         <button

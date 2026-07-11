@@ -5,6 +5,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import {
   ReactFlow,
@@ -13,6 +14,7 @@ import {
   MiniMap,
   SelectionMode,
   ConnectionMode,
+  ViewportPortal,
   addEdge,
   reconnectEdge,
   useNodesState,
@@ -26,6 +28,7 @@ import {
   type Connection,
   type NodeTypes,
   type EdgeTypes,
+  type OnNodeDrag,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
@@ -37,7 +40,8 @@ import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
 import { fetchServierSvgById } from '../services/servierIcons'
 import { sanitizeSvg } from '../services/bioartIcons'
 import { resolveLayoutOverlaps } from '../utils/resolveTextOverlaps'
-import { captureElement, triggerDownload } from '../utils/exportImage'
+import { captureElement, captureBlob, copyBlobToClipboard, triggerDownload } from '../utils/exportImage'
+import { computeGuides } from '../utils/alignmentGuides'
 import type { DiagramExport, Icon, IconNodeData, TextNodeData } from '../types'
 
 const EXPORT_PADDING = 60
@@ -55,6 +59,7 @@ export interface DiagramCanvasHandle {
   paste: () => void
   duplicateSelected: () => void
   exportImage: (format: 'png' | 'svg', filename: string, opts: { bgColor: string; scale: number }) => Promise<void>
+  copyImageToClipboard: (bgColor: string) => Promise<boolean>
   restoreAutosave: () => DiagramExport | null
 }
 
@@ -154,6 +159,39 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       }, AUTOSAVE_DEBOUNCE_MS)
       return () => clearTimeout(timer)
     }, [nodes, edges])
+
+    // Shared setup for both file export and clipboard copy: find the live
+    // viewport DOM node, clear any selection outline/resize handles so they
+    // don't leak into the capture, and compute the pan/zoom transform that
+    // fits the whole diagram (plus padding) into the output image.
+    async function prepareCapture(scale: number) {
+      if (nodes.length === 0) return null
+      const viewportEl = wrapperRef.current?.querySelector('.react-flow__viewport') as HTMLElement | null
+      if (!viewportEl) return null
+
+      const hadSelection = nodes.some((n) => n.selected) || edges.some((e) => e.selected)
+      if (hadSelection) {
+        setNodes((nds) => nds.map((n) => (n.selected ? { ...n, selected: false } : n)))
+        setEdges((eds) => eds.map((e) => (e.selected ? { ...e, selected: false } : e)))
+        await new Promise(requestAnimationFrame)
+      }
+
+      const bounds = getNodesBounds(nodes)
+      const paddedBounds = {
+        x: bounds.x - EXPORT_PADDING,
+        y: bounds.y - EXPORT_PADDING,
+        width: bounds.width + EXPORT_PADDING * 2,
+        height: bounds.height + EXPORT_PADDING * 2,
+      }
+      const width = Math.max(1, Math.round(paddedBounds.width * scale))
+      const height = Math.max(1, Math.round(paddedBounds.height * scale))
+      const viewport = getViewportForBounds(paddedBounds, width, height, scale, scale, 0)
+
+      return {
+        viewportEl,
+        style: { width, height, transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})` },
+      }
+    }
 
     useImperativeHandle(
       ref,
@@ -301,38 +339,18 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           setNodes(nds => [...nds.map(n => ({...n, selected: false})), ...newNodes])
         },
         exportImage: async (format, filename, opts) => {
-          if (nodes.length === 0) return
-          const viewportEl = wrapperRef.current?.querySelector('.react-flow__viewport') as HTMLElement | null
-          if (!viewportEl) return
-
-          // Selection outlines / resize handles are part of the live DOM being
-          // captured — clear them first so the export shows a clean diagram,
-          // then wait a frame for the deselect to actually paint.
-          const hadSelection = nodes.some(n => n.selected) || edges.some(e => e.selected)
-          if (hadSelection) {
-            setNodes(nds => nds.map(n => (n.selected ? { ...n, selected: false } : n)))
-            setEdges(eds => eds.map(e => (e.selected ? { ...e, selected: false } : e)))
-            await new Promise(requestAnimationFrame)
-          }
-
-          const bounds = getNodesBounds(nodes)
-          const paddedBounds = {
-            x: bounds.x - EXPORT_PADDING,
-            y: bounds.y - EXPORT_PADDING,
-            width: bounds.width + EXPORT_PADDING * 2,
-            height: bounds.height + EXPORT_PADDING * 2,
-          }
-          const width = Math.max(1, Math.round(paddedBounds.width * opts.scale))
-          const height = Math.max(1, Math.round(paddedBounds.height * opts.scale))
-          const viewport = getViewportForBounds(paddedBounds, width, height, opts.scale, opts.scale, 0)
-
-          const dataUrl = await captureElement(
-            format,
-            viewportEl,
-            { width, height, transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})` },
-            opts.bgColor,
-          )
+          const prepared = await prepareCapture(opts.scale)
+          if (!prepared) return
+          const dataUrl = await captureElement(format, prepared.viewportEl, prepared.style, opts.bgColor)
           triggerDownload(dataUrl, filename)
+        },
+        copyImageToClipboard: async (bgColor) => {
+          const prepared = await prepareCapture(2)
+          if (!prepared) return false
+          const blob = await captureBlob(prepared.viewportEl, prepared.style, bgColor)
+          if (!blob) return false
+          await copyBlobToClipboard(blob)
+          return true
         },
       }),
       [nodes, edges, setNodes, setEdges, getNodesBounds],
@@ -350,6 +368,42 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
         setEdges((els) => reconnectEdge(oldEdge, newConnection, els)),
       [setEdges],
     )
+
+    // Smart alignment guides — snap the dragged node onto another node's
+    // edge/center when close, and show a guide line while dragging. Skipped
+    // entirely when snapToGrid is on: XYDrag already applies snapGrid
+    // internally before onNodeDrag fires, so running both would fight over
+    // the final position.
+    const [guides, setGuides] = useState<{ vGuideX: number | null; hGuideY: number | null }>({
+      vGuideX: null,
+      hGuideY: null,
+    })
+
+    const onNodeDrag: OnNodeDrag = useCallback(
+      (_event, node) => {
+        if (snapToGrid) return
+        const dragged = { id: node.id, x: node.position.x, y: node.position.y, width: node.width ?? 110, height: node.height ?? 100 }
+        const others = nodes
+          .filter((n) => n.id !== node.id)
+          .map((n) => ({ id: n.id, x: n.position.x, y: n.position.y, width: n.width ?? 110, height: n.height ?? 100 }))
+        const result = computeGuides(dragged, others, 6)
+        setGuides({ vGuideX: result.vGuideX, hGuideY: result.hGuideY })
+        if (result.dx !== 0 || result.dy !== 0) {
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === node.id
+                ? { ...n, position: { x: n.position.x + result.dx, y: n.position.y + result.dy } }
+                : n,
+            ),
+          )
+        }
+      },
+      [snapToGrid, nodes, setNodes],
+    )
+
+    const onNodeDragStop = useCallback(() => {
+      setGuides({ vGuideX: null, hGuideY: null })
+    }, [])
 
     const onDrop = useCallback(
       (e: React.DragEvent) => {
@@ -514,6 +568,8 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onReconnect={onReconnect}
+          onNodeDrag={onNodeDrag}
+          onNodeDragStop={onNodeDragStop}
           onDrop={onDrop}
           onDragOver={onDragOver}
           defaultEdgeOptions={defaultEdgeOptions}
@@ -536,6 +592,20 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
             pannable
             className="!rounded-lg !shadow-sm !border !border-gray-200"
           />
+          <ViewportPortal>
+            {guides.vGuideX !== null && (
+              <div
+                className="pointer-events-none"
+                style={{ position: 'absolute', left: guides.vGuideX, top: -5000, width: 1, height: 10000, background: '#3b82f6' }}
+              />
+            )}
+            {guides.hGuideY !== null && (
+              <div
+                className="pointer-events-none"
+                style={{ position: 'absolute', left: -5000, top: guides.hGuideY, width: 10000, height: 1, background: '#3b82f6' }}
+              />
+            )}
+          </ViewportPortal>
         </ReactFlow>
       </div>
     )

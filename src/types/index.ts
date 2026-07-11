@@ -16,6 +16,9 @@ export interface IconNodeData {
   rotation?: number
   shapeStrokeColor?: string
   shapeStrokeWidth?: number
+  opacity?: number
+  cornerRadius?: number
+  gradientTo?: string
   [key: string]: unknown
 }
 
@@ -29,6 +32,10 @@ export interface TextNodeData {
   borderColor: string
   textAlign: 'left' | 'center' | 'right'
   rotation?: number
+  fontFamily?: string
+  opacity?: number
+  cornerRadius?: number
+  gradientTo?: string
   [key: string]: unknown
 }
 
@@ -75,6 +82,9 @@ export type DiagramNodeExport =
       shapeStrokeColor?: string
       shapeStrokeWidth?: number
       zIndex?: number
+      opacity?: number
+      cornerRadius?: number
+      gradientTo?: string
     }
   | {
       nodeType: 'text'
@@ -93,6 +103,10 @@ export type DiagramNodeExport =
       textAlign?: 'left' | 'center' | 'right'
       zIndex?: number
       rotation?: number
+      fontFamily?: string
+      opacity?: number
+      cornerRadius?: number
+      gradientTo?: string
     }
 
 /** Portable diagram format — used for save/load, SVG export, and LLM round-trips */
