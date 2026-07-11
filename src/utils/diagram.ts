@@ -37,11 +37,15 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
       // An explicit zIndex always wins; only default to "bgColor implies a
       // background panel" (behind edges) when zIndex is omitted — otherwise a
       // colored callout box would be silently demoted to an immovable panel
-      // just for having a fill color.
+      // just for having a fill color. The same effective zIndex decides the
+      // node TYPE too: a background panel becomes a dedicated 'panelNode'
+      // (see PanelNode.tsx) so PropertiesPanel and resolveLayoutOverlaps can
+      // treat it as a panel by type rather than re-inferring it from zIndex.
+      // The on-disk/LLM-facing JSON shape is unchanged either way.
       const zIndex = typeof n.zIndex === 'number' ? n.zIndex : (n.bgColor ? -1 : 2)
       return {
         id: n.id,
-        type: 'textNode',
+        type: zIndex < 0 ? 'panelNode' : 'textNode',
         position: { x: n.x, y: n.y },
         width: n.width ?? 200,
         height: n.height ?? 60,
@@ -92,7 +96,7 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
   return {
     title,
     nodes: nodes.map((n): DiagramNodeExport => {
-      if (n.type === 'textNode') {
+      if (n.type === 'textNode' || n.type === 'panelNode') {
         const d = n.data as TextNodeData
         return {
           nodeType: 'text',

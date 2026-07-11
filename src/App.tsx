@@ -5,6 +5,7 @@ import {
   FileImage,
   FileJson,
   FolderOpen,
+  Frame,
   Grid3X3,
   Hand,
   LayoutGrid,
@@ -73,6 +74,15 @@ export function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Restore whatever was last autosaved (survives a refresh/closed tab) —
+  // runs once on mount, through the same load path as any other spec import
+  // so overlap-resolution and async icon hydration behave identically.
+  useEffect(() => {
+    const spec = canvasRef.current?.restoreAutosave()
+    if (spec) handleLoadSpec(spec)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── Export / Save / Load ───────────────────────────────────────────────
@@ -239,6 +249,16 @@ export function App() {
           <span className="hidden sm:inline">Text</span>
         </button>
 
+        {/* Add Panel */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('sciknitter:addpanel'))}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
+          title="Add a background panel to group icons"
+        >
+          <Frame className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Panel</span>
+        </button>
+
         {/* Panel label */}
         <button
           onClick={() => {
@@ -384,6 +404,7 @@ export function App() {
             ref={canvasRef}
             snapToGrid={snapToGrid}
             isSelecting={isSelecting}
+            title={diagramTitle}
           />
           <PropertiesPanel />
         </ReactFlowProvider>

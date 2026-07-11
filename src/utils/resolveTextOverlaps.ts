@@ -89,22 +89,20 @@ function nudgeAwayFromBox(
  * spec import (LLM paste or manual JSON file) as a safety net independent of
  * how well the source JSON's coordinates were chosen.
  *
- * Panel text nodes (zIndex < 0) are never moved — they define fixed regions
- * that intentionally enclose their member icons. Everything else is:
+ * Panels (type 'panelNode') are never moved — they define fixed regions that
+ * intentionally enclose their member icons. Everything else is:
  *  1. Icon-vs-icon overlaps resolved by iterative force-separation.
  *  2. Non-panel text nodes (annotations) nudged to a fixpoint against the
  *     now-final icon positions and against each other, looping until a pass
  *     makes no further moves (bounded by MAX_TEXT_PASSES).
  */
 export function resolveLayoutOverlaps(nodes: Node[]): Node[] {
-  const isPanel = (n: Node) => n.type === 'textNode' && (n.zIndex ?? 0) < 0
-
   const iconNodes = nodes.filter((n) => n.type === 'iconNode')
   const separatedIcons = separateIcons(iconNodes)
   const iconById = new Map(separatedIcons.map((n) => [n.id, n]))
 
   const result = nodes.map((n) => iconById.get(n.id) ?? { ...n, position: { ...n.position } })
-  const movable = result.filter((n) => n.type === 'iconNode' || (n.type === 'textNode' && !isPanel(n)))
+  const movable = result.filter((n) => n.type === 'iconNode' || n.type === 'textNode')
 
   for (let pass = 0; pass < MAX_TEXT_PASSES; pass++) {
     let moved = false

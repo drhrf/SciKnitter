@@ -306,21 +306,16 @@ export function PropertiesPanel() {
             </div>
           </div>
 
-          {/* Background */}
+          {/* Background — purely cosmetic here; a colored text box stays a
+              normal foreground annotation. Use "Convert to panel" below to
+              turn it into an immovable background region instead. */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Background</label>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={hasBg}
-                onChange={(e) => {
-                  patchNodeData(selectedNode.id, { bgColor: e.target.checked ? '#ffffff' : '' })
-                  if (e.target.checked) {
-                    setNodes((nds) => nds.map((n) =>
-                      n.id === selectedNode.id ? { ...n, zIndex: -1 } : n,
-                    ))
-                  }
-                }}
+                onChange={(e) => patchNodeData(selectedNode.id, { bgColor: e.target.checked ? '#ffffff' : '' })}
                 className="rounded"
               />
               <input
@@ -409,6 +404,20 @@ export function PropertiesPanel() {
             </div>
           </div>
 
+          {/* Convert to panel */}
+          <button
+            onClick={() => {
+              patchNodeData(selectedNode.id, { bgColor: d.bgColor || '#eff6ff', borderColor: d.borderColor || '#bfdbfe' })
+              setNodes((nds) => nds.map((n) =>
+                n.id === selectedNode.id ? { ...n, type: 'panelNode', zIndex: -1 } : n,
+              ))
+            }}
+            className="w-full flex items-center justify-center gap-1.5 text-xs border border-gray-200 rounded-md py-1.5 bg-white hover:bg-gray-50 transition-colors"
+            title="Turn this into a background panel that encloses other icons"
+          >
+            ▢ Convert to panel
+          </button>
+
           {/* Duplicate */}
           <button
             onClick={() => {
@@ -432,6 +441,166 @@ export function PropertiesPanel() {
           >
             <Trash2 className="w-3.5 h-3.5" />
             Delete text box
+          </button>
+        </div>
+      </aside>
+    )
+  }
+
+  // ── Panel node ─────────────────────────────────────────────────────────────
+  if (selectedNode?.type === 'panelNode') {
+    const d = selectedNode.data as TextNodeData
+    const hasBorder = !!d.borderColor
+
+    return (
+      <aside className="w-52 min-w-[13rem] border-l border-gray-200 bg-gray-50 flex flex-col overflow-y-auto">
+        <div className="p-4 space-y-4">
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Panel</h2>
+
+          {/* Title */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+            <textarea
+              defaultValue={d.text}
+              rows={2}
+              placeholder="Panel title…"
+              onBlur={(e) => patchNodeData(selectedNode.id, { text: e.target.value })}
+              className="w-full text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+            />
+          </div>
+
+          {/* Font size */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-600 shrink-0">Size</label>
+            <input
+              type="number"
+              min={8}
+              max={72}
+              defaultValue={d.fontSize ?? 12}
+              onBlur={(e) =>
+                patchNodeData(selectedNode.id, { fontSize: Math.max(8, Math.min(72, Number(e.target.value))) })
+              }
+              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+              className="w-14 text-xs border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <span className="text-xs text-gray-400">px</span>
+          </div>
+
+          {/* Title color */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Title color</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={d.textColor || '#1e293b'}
+                onChange={(e) => patchNodeData(selectedNode.id, { textColor: e.target.value })}
+                className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
+              />
+              <span className="text-xs text-gray-500 font-mono">{d.textColor || '#1e293b'}</span>
+            </div>
+          </div>
+
+          {/* Fill — unchecking turns this back into a plain text box, since a
+              panel is defined by having a background. */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Fill</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked
+                onChange={() => {
+                  setNodes((nds) => nds.map((n) =>
+                    n.id === selectedNode.id ? { ...n, type: 'textNode', zIndex: 2 } : n,
+                  ))
+                }}
+                className="rounded"
+                title="Uncheck to convert back to a text box"
+              />
+              <input
+                type="color"
+                value={d.bgColor || '#eff6ff'}
+                onChange={(e) => patchNodeData(selectedNode.id, { bgColor: e.target.value })}
+                className="w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5"
+              />
+              <span className="text-xs text-gray-400">color</span>
+            </div>
+          </div>
+
+          {/* Border */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Border</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={hasBorder}
+                onChange={(e) =>
+                  patchNodeData(selectedNode.id, { borderColor: e.target.checked ? '#bfdbfe' : '' })
+                }
+                className="rounded"
+              />
+              <input
+                type="color"
+                value={d.borderColor || '#bfdbfe'}
+                disabled={!hasBorder}
+                onChange={(e) => patchNodeData(selectedNode.id, { borderColor: e.target.value })}
+                className={`w-7 h-7 rounded border border-gray-300 cursor-pointer p-0.5 ${!hasBorder ? 'opacity-40 cursor-not-allowed' : ''}`}
+              />
+              <span className="text-xs text-gray-400">{hasBorder ? 'color' : 'none'}</span>
+            </div>
+          </div>
+
+          {/* Layer order */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Layer order</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => {
+                  const all = getNodes()
+                  const maxZ = Math.max(0, ...all.map(n => (n.zIndex ?? 0) as number))
+                  setNodes(all.map(n => n.id === selectedNode.id ? {...n, zIndex: maxZ + 1} : n))
+                }}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors"
+                title="Bring to front"
+              >
+                ↑ Front
+              </button>
+              <button
+                onClick={() => {
+                  const all = getNodes()
+                  const minZ = Math.min(0, ...all.map(n => (n.zIndex ?? 0) as number))
+                  setNodes(all.map(n => n.id === selectedNode.id ? {...n, zIndex: minZ - 1} : n))
+                }}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors"
+                title="Send to back"
+              >
+                ↓ Back
+              </button>
+            </div>
+          </div>
+
+          {/* Duplicate */}
+          <button
+            onClick={() => {
+              const newNode = {
+                ...selectedNode,
+                id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                position: { x: selectedNode.position.x + 30, y: selectedNode.position.y + 30 },
+                selected: false,
+              }
+              setNodes((nds) => [...nds, newNode])
+            }}
+            className="w-full flex items-center justify-center gap-1.5 text-xs border border-gray-200 rounded-md py-1.5 bg-white hover:bg-gray-50 transition-colors"
+          >
+            ⧉ Duplicate
+          </button>
+
+          {/* Delete */}
+          <button
+            onClick={() => deleteElements({ nodes: [{ id: selectedNode.id }] })}
+            className="w-full flex items-center justify-center gap-1.5 text-xs text-red-600 border border-red-200 rounded-md py-1.5 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete panel
           </button>
         </div>
       </aside>

@@ -31,6 +31,7 @@ import '@xyflow/react/dist/style.css'
 
 import { IconNode } from './IconNode'
 import { TextNode } from './TextNode'
+import { PanelNode } from './PanelNode'
 import { CustomEdge } from './CustomEdge'
 import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
 import { fetchServierSvgById } from '../services/servierIcons'
@@ -40,6 +41,8 @@ import { captureElement, triggerDownload } from '../utils/exportImage'
 import type { DiagramExport, Icon, IconNodeData, TextNodeData } from '../types'
 
 const EXPORT_PADDING = 60
+const AUTOSAVE_KEY = 'sciknitter:autosave:v1'
+const AUTOSAVE_DEBOUNCE_MS = 800
 
 export interface DiagramCanvasHandle {
   getSpec: (title: string) => DiagramExport
@@ -52,12 +55,14 @@ export interface DiagramCanvasHandle {
   paste: () => void
   duplicateSelected: () => void
   exportImage: (format: 'png' | 'svg', filename: string, opts: { bgColor: string; scale: number }) => Promise<void>
+  restoreAutosave: () => DiagramExport | null
 }
 
 interface DiagramCanvasProps {
   snapToGrid: boolean
   /** When true: left-drag draws a selection box; pan uses middle/right mouse */
   isSelecting: boolean
+  title: string
 }
 
 const defaultEdgeOptions = {
@@ -91,14 +96,18 @@ function createRFNode(icon: Icon, position: { x: number; y: number }): Node {
 }
 
 export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>(
-  function DiagramCanvas({ snapToGrid, isSelecting }, ref) {
+  function DiagramCanvas({ snapToGrid, isSelecting, title }, ref) {
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
     const { screenToFlowPosition, getNodesBounds } = useReactFlow()
     const wrapperRef = useRef<HTMLDivElement>(null)
 
-    const nodeTypes: NodeTypes = useMemo(() => ({ iconNode: IconNode, textNode: TextNode }), [])
+    const nodeTypes: NodeTypes = useMemo(() => ({ iconNode: IconNode, textNode: TextNode, panelNode: PanelNode }), [])
     const edgeTypes: EdgeTypes = useMemo(() => ({ custom: CustomEdge }), [])
+
+    // Stable ref to the latest title for the autosave effect below
+    const titleRef = useRef(title)
+    titleRef.current = title
 
     // History state (refs so they don't cause re-renders)
     const historyRef = useRef<Array<{ nodes: Node[]; edges: Edge[] }>>([])
@@ -126,6 +135,23 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
         if (historyRef.current.length > 60) historyRef.current.shift()
         else historyIdxRef.current++
       }, 400)
+      return () => clearTimeout(timer)
+    }, [nodes, edges])
+
+    // Debounced autosave to localStorage — survives a refresh/closed tab.
+    // Separate timer/interval from the undo-history debounce above: that one
+    // exists to capture discrete undo steps, this one exists to persist, and
+    // a synchronous localStorage.setItem on every 400ms tick (e.g. mid-drag)
+    // would be wasteful.
+    useEffect(() => {
+      if (isRestoringRef.current) return
+      const timer = setTimeout(() => {
+        if (nodes.length === 0 && edges.length === 0) return
+        try {
+          const spec = rfToSpec(nodes, edges, titleRef.current)
+          localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(spec))
+        } catch { /* storage full/unavailable — autosave is best-effort */ }
+      }, AUTOSAVE_DEBOUNCE_MS)
       return () => clearTimeout(timer)
     }, [nodes, edges])
 
@@ -186,6 +212,15 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
         clearAll: () => {
           setNodes([])
           setEdges([])
+          localStorage.removeItem(AUTOSAVE_KEY)
+        },
+        restoreAutosave: () => {
+          try {
+            const raw = localStorage.getItem(AUTOSAVE_KEY)
+            return raw ? (JSON.parse(raw) as DiagramExport) : null
+          } catch {
+            return null
+          }
         },
         autoLayout: () => {
           setNodes(nds => {
@@ -410,6 +445,34 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       }
       window.addEventListener('sciknitter:addtext', handler)
       return () => window.removeEventListener('sciknitter:addtext', handler)
+    }, [])
+
+    useEffect(() => {
+      function handler() {
+        const data: TextNodeData = {
+          text: '',
+          fontSize: 12,
+          fontWeight: 'bold',
+          fontStyle: 'normal',
+          textColor: '#1e293b',
+          bgColor: '#eff6ff',
+          borderColor: '#bfdbfe',
+          textAlign: 'left',
+        }
+        setNodesRef.current((nds) =>
+          nds.concat({
+            id: `panelnode-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            type: 'panelNode',
+            position: { x: 100 + Math.random() * 200, y: 80 + Math.random() * 100 },
+            width: 400,
+            height: 300,
+            zIndex: -1,
+            data,
+          }),
+        )
+      }
+      window.addEventListener('sciknitter:addpanel', handler)
+      return () => window.removeEventListener('sciknitter:addpanel', handler)
     }, [])
 
     useEffect(() => {
