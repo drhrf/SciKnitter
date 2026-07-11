@@ -1,15 +1,36 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Loader2, RotateCcw, Search, X } from 'lucide-react'
+import { Loader2, RotateCcw, Search, Star, X } from 'lucide-react'
 import { useIconSearch } from '../hooks/useIconSearch'
 import { getAllIcons, getCategories } from '../data/iconsIndex'
 import { clearBioartCache, fetchBioartIndex, fetchBioartSvg, type BioartIcon } from '../services/bioartIcons'
+import { addRecent, getFavorites, getRecents, isFavorite, toggleFavorite } from '../services/iconPreferences'
 import { ExternalIconSearch } from './ExternalIconSearch'
 import type { Icon } from '../types'
 
-type Tab = 'library' | 'servier' | 'nihbioart'
+type Tab = 'library' | 'servier' | 'nihbioart' | 'saved'
 
 interface IconBrowserProps {
   onAddIcon: (icon: Icon) => void
+}
+
+// Small star toggle shared by every tab's icon card — stopPropagation so
+// starring doesn't also trigger the card's "add to canvas" click/drag.
+function FavoriteStar({ icon, onToggle }: { icon: Icon; onToggle?: () => void }) {
+  const [favorited, setFavorited] = useState(() => isFavorite(icon.id))
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation()
+        toggleFavorite(icon)
+        setFavorited((v) => !v)
+        onToggle?.()
+      }}
+      title={favorited ? 'Remove from favorites' : 'Add to favorites'}
+      className="absolute top-1 right-1 p-0.5 rounded-full bg-white/80 opacity-0 group-hover:opacity-100 hover:bg-white transition-opacity"
+    >
+      <Star className={`w-3.5 h-3.5 ${favorited ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+    </button>
+  )
 }
 
 // ── Library tab ────────────────────────────────────────────────────────────
@@ -81,8 +102,9 @@ function LibraryTab({ onAddIcon }: IconBrowserProps) {
                 onDragStart={(e) => handleDragStart(e, icon)}
                 onClick={() => onAddIcon(icon)}
                 title={`${icon.name}\nDrag to canvas or click to add`}
-                className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 cursor-grab hover:border-blue-400 hover:shadow-sm transition-all group select-none"
+                className="relative flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 cursor-grab hover:border-blue-400 hover:shadow-sm transition-all group select-none"
               >
+                <FavoriteStar icon={icon} />
                 <div
                   className="w-12 h-12 flex items-center justify-center"
                   dangerouslySetInnerHTML={{ __html: icon.svgContent }}
@@ -98,6 +120,69 @@ function LibraryTab({ onAddIcon }: IconBrowserProps) {
 
       <div className="px-3 py-1.5 border-t border-gray-100 text-center">
         <p className="text-[10px] text-gray-400">Drag to canvas or click to add</p>
+      </div>
+    </div>
+  )
+}
+
+// ── Saved tab (favorites + recents, across every source) ───────────────────
+
+function SavedTab({ onAddIcon }: IconBrowserProps) {
+  const [favorites, setFavorites] = useState<Icon[]>(() => getFavorites())
+  const recents = useMemo(() => getRecents(), [])
+
+  function handleDragStart(e: React.DragEvent, icon: Icon) {
+    e.dataTransfer.setData('application/sciknitter', JSON.stringify(icon))
+    e.dataTransfer.effectAllowed = 'copy'
+  }
+
+  function renderGrid(icons: Icon[]) {
+    return (
+      <div className="grid grid-cols-2 gap-1.5">
+        {icons.map((icon) => (
+          <div
+            key={icon.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, icon)}
+            onClick={() => onAddIcon(icon)}
+            title={`${icon.name}\nDrag to canvas or click to add`}
+            className="relative flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 cursor-grab hover:border-blue-400 hover:shadow-sm transition-all group select-none"
+          >
+            <FavoriteStar icon={icon} onToggle={() => setFavorites(getFavorites())} />
+            <div
+              className="w-12 h-12 flex items-center justify-center"
+              dangerouslySetInnerHTML={{ __html: icon.svgContent }}
+            />
+            <span className="mt-1 text-[10px] text-center text-gray-600 leading-tight line-clamp-2 group-hover:text-blue-600">
+              {icon.name}
+            </span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-2 space-y-4">
+      <div>
+        <h3 className="px-1 pb-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+          Favorites
+        </h3>
+        {favorites.length === 0 ? (
+          <p className="px-1 text-xs text-gray-400">Star an icon in any tab to save it here.</p>
+        ) : (
+          renderGrid(favorites)
+        )}
+      </div>
+      <div>
+        <h3 className="px-1 pb-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+          Recently used
+        </h3>
+        {recents.length === 0 ? (
+          <p className="px-1 text-xs text-gray-400">Icons you add to the canvas show up here.</p>
+        ) : (
+          renderGrid(recents)
+        )}
       </div>
     </div>
   )
@@ -127,24 +212,43 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
     )
   }, [icons, query])
 
+  const [favoriting, setFavoriting] = useState<string | null>(null)
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => new Set(getFavorites().map((i) => i.id)))
+
+  async function toBioartIcon(icon: BioartIcon): Promise<Icon> {
+    const svgContent = await fetchBioartSvg(icon)
+    return {
+      id: icon.id,
+      name: icon.name,
+      category: icon.category,
+      tags: icon.tags,
+      source: 'bioart',
+      svgContent,
+    }
+  }
+
   async function handleAdd(icon: BioartIcon) {
     if (adding) return
     setAdding(icon.id)
     try {
-      const svgContent = await fetchBioartSvg(icon)
-      const fullIcon: Icon = {
-        id: icon.id,
-        name: icon.name,
-        category: icon.category,
-        tags: icon.tags,
-        source: 'bioart',
-        svgContent,
-      }
-      onAddIcon(fullIcon)
+      onAddIcon(await toBioartIcon(icon))
     } catch {
       // silently fail
     } finally {
       setAdding(null)
+    }
+  }
+
+  async function handleToggleFavorite(icon: BioartIcon) {
+    if (favoriting) return
+    setFavoriting(icon.id)
+    try {
+      toggleFavorite(await toBioartIcon(icon))
+      setFavoriteIds(new Set(getFavorites().map((i) => i.id)))
+    } catch {
+      // silently fail
+    } finally {
+      setFavoriting(null)
     }
   }
 
@@ -206,13 +310,27 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
         ) : (
           <div className="grid grid-cols-2 gap-1.5">
             {filtered.map((icon) => (
-              <button
+              <div
                 key={icon.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleAdd(icon)}
-                disabled={!!adding}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(icon) }}
                 title={`${icon.name}\nClick to add to canvas`}
-                className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-sm transition-all group select-none disabled:opacity-60"
+                className={`relative flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-sm transition-all group select-none cursor-pointer ${adding ? 'opacity-60 pointer-events-none' : ''}`}
               >
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleToggleFavorite(icon) }}
+                  disabled={!!favoriting}
+                  title={favoriteIds.has(icon.id) ? 'Remove from favorites' : 'Add to favorites'}
+                  className="absolute top-1 right-1 p-0.5 rounded-full bg-white/80 opacity-0 group-hover:opacity-100 hover:bg-white transition-opacity"
+                >
+                  {favoriting === icon.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />
+                  ) : (
+                    <Star className={`w-3.5 h-3.5 ${favoriteIds.has(icon.id) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+                  )}
+                </button>
                 {adding === icon.id ? (
                   <div className="w-12 h-12 flex items-center justify-center">
                     <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
@@ -228,7 +346,7 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
                 <span className="mt-1 text-[10px] text-center text-gray-600 leading-tight line-clamp-2 group-hover:text-green-600">
                   {icon.name}
                 </span>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -247,10 +365,18 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'library', label: 'Library' },
   { id: 'servier', label: 'Servier' },
   { id: 'nihbioart', label: 'NIH Bioart' },
+  { id: 'saved', label: '★ Saved' },
 ]
 
-export function IconBrowser({ onAddIcon }: IconBrowserProps) {
+export function IconBrowser({ onAddIcon: onAddIconProp }: IconBrowserProps) {
   const [activeTab, setActiveTab] = useState<Tab>('library')
+
+  // Every add, regardless of source tab, counts as "recently used" —
+  // wrapping once here avoids threading recents-tracking through each tab.
+  function onAddIcon(icon: Icon) {
+    addRecent(icon)
+    onAddIconProp(icon)
+  }
 
   return (
     <aside className="flex flex-col w-64 min-w-[16rem] border-r border-gray-200 bg-gray-50 h-full overflow-hidden">
@@ -301,6 +427,7 @@ export function IconBrowser({ onAddIcon }: IconBrowserProps) {
         {activeTab === 'library' && <LibraryTab onAddIcon={onAddIcon} />}
         {activeTab === 'servier' && <ExternalIconSearch onAddIcon={onAddIcon} />}
         {activeTab === 'nihbioart' && <NIHBioartTab onAddIcon={onAddIcon} />}
+        {activeTab === 'saved' && <SavedTab onAddIcon={onAddIcon} />}
       </div>
     </aside>
   )

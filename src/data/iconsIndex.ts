@@ -463,6 +463,15 @@ const ICONS: Icon[] = [
   // Bracket / Group box
   { id: 'shape-bracket', name: 'Bracket', category: 'Shapes', tags: ['bracket', 'group', 'frame', 'shape'], source: 'custom',
     svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path d="M20 8 L8 8 L8 72 L20 72" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M60 8 L72 8 L72 72 L60 72" fill="none" stroke="#374151" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+
+  // Blocked / knockout X — extremely common in biology figures to mark
+  // inhibition, gene knockout, or absence of a component
+  { id: 'shape-x-mark', name: 'Blocked / Knockout X', category: 'Shapes', tags: ['x', 'blocked', 'knockout', 'inhibition', 'deletion', 'absent', 'shape'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><line x1="16" y1="16" x2="64" y2="64" stroke="#374151" stroke-width="6" stroke-linecap="round"/><line x1="64" y1="16" x2="16" y2="64" stroke="#374151" stroke-width="6" stroke-linecap="round"/></svg>` },
+
+  // Star — highlighting a key finding, e.g. in graphical abstracts
+  { id: 'shape-star', name: 'Star', category: 'Shapes', tags: ['star', 'highlight', 'key finding', 'new', 'shape'], source: 'custom',
+    svgContent: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,4 48.8,28 76,28 54.4,45.6 63.2,72.8 40,56 16.8,72.8 25.6,45.6 4,28 31.2,28" fill="none" stroke="#374151" stroke-width="3" stroke-linejoin="round"/></svg>` },
 ]
 
 export function getAllIcons(): Icon[] {
