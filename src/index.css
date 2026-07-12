@@ -20,13 +20,6 @@
   display: none;
 }
 
-/* Edges must render above panel backgrounds (z-index: -1) but icon nodes
-   (z-index: 2) still appear on top of edges. Match ReactFlow's own selector
-   specificity and use !important so nothing else can override. */
-.react-flow .react-flow__edges {
-  z-index: 1 !important;
-}
-
 /* ReactFlow overrides */
 .react-flow__handle {
   opacity: 0;
