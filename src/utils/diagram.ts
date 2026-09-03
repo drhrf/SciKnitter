@@ -6,9 +6,17 @@ import type {
   DiagramNodeExport,
   EdgeData,
   EdgeStyle,
+  IconAttribution,
   IconNodeData,
   TextNodeData,
 } from '../types'
+
+function parseAttribution(raw: unknown): IconAttribution | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined
+  const a = raw as Record<string, unknown>
+  if (typeof a.author !== 'string' || typeof a.license !== 'string') return undefined
+  return { author: a.author, license: a.license }
+}
 
 const iconLookup = new Map(getAllIcons().map((i) => [i.id, i]))
 
@@ -70,6 +78,7 @@ export function specToRFNodes(spec: DiagramExport): Node[] {
       opacity: n.opacity,
       cornerRadius: n.cornerRadius,
       gradientTo: n.gradientTo,
+      attribution: n.attribution,
     }
     return {
       id: n.id,
@@ -147,6 +156,7 @@ export function rfToSpec(nodes: Node[], edges: Edge[], title: string): DiagramEx
         opacity: d.opacity,
         cornerRadius: d.cornerRadius,
         gradientTo: d.gradientTo,
+        attribution: d.attribution,
       }
     }),
     edges: edges.map((e) => {
@@ -196,6 +206,18 @@ function getCachedServierIcons(): Array<{ id: string; name: string; category: st
   }
 }
 
+function getCachedBioiconsIcons(): Array<{ id: string; name: string; category: string }> {
+  try {
+    const raw = localStorage.getItem('sciknitter:bioicons:v1')
+    if (!raw) return []
+    const data = JSON.parse(raw) as { icons: Array<{ id: string; name: string; category: string }> }
+    if (!Array.isArray(data?.icons)) return []
+    return data.icons
+  } catch {
+    return []
+  }
+}
+
 function buildIconListingSection(): string {
   const allBuiltIn = getAllIcons()
   const shapeIcons = allBuiltIn.filter((i) => i.category === 'Shapes')
@@ -203,6 +225,7 @@ function buildIconListingSection(): string {
 
   const bioartIcons = getCachedBioartIcons()
   const servierIcons = getCachedServierIcons()
+  const bioiconsIcons = getCachedBioiconsIcons()
 
   const bioartSection = bioartIcons.length > 0
     ? `NIH BIOART ICONS — PRIMARY SOURCE (${bioartIcons.length} unique concepts)
@@ -224,6 +247,15 @@ ${servierIcons
     .join('\n')}`
     : ''
 
+  const bioiconsSection = bioiconsIcons.length > 0
+    ? `BIOICONS — TERTIARY SOURCE (use if neither BioArt nor Servier has a match)
+${'='.repeat(62)}
+${bioiconsIcons
+    .slice(0, 400)
+    .map((i) => `  • ${i.id}  "${i.name}"  [${i.category}]`)
+    .join('\n')}`
+    : ''
+
   const builtInSection = `BUILT-IN SCIENTIFIC ICONS (last fallback)
 ${'='.repeat(62)}
 ${scientificIcons
@@ -239,6 +271,7 @@ ${shapeIcons
   return `${bioartSection}
 
 ${servierSection ? servierSection + '\n' : ''}
+${bioiconsSection ? bioiconsSection + '\n' : ''}
 ${builtInSection}`
 }
 
@@ -397,6 +430,7 @@ ICON RULES
 ==========
 - ALWAYS prefer NIH BioArt icons (primary source) for biological and scientific elements
 - Use Servier icons only when BioArt has no suitable match
+- Use Bioicons only when neither BioArt nor Servier has a suitable match
 - Only use iconId values that exactly match ids listed above — no guessing
 - Set zIndex: 0 (or omit) for regular icons; zIndex: 1 for key/highlighted icons
 - FALLBACK — if NONE of the icons above is a reasonable conceptual match for a
@@ -597,6 +631,7 @@ export function parseDiagramSpec(raw: string): DiagramExport {
         opacity: typeof node.opacity === 'number' ? node.opacity : undefined,
         cornerRadius: typeof node.cornerRadius === 'number' ? node.cornerRadius : undefined,
         gradientTo: typeof node.gradientTo === 'string' ? node.gradientTo : undefined,
+        attribution: parseAttribution(node.attribution),
       }
     }),
     edges: (obj.edges as unknown[]).map((e, i) => {

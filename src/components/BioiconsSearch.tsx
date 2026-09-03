@@ -8,15 +8,15 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import {
-  clearServierCache,
-  fetchServierIndex,
-  fetchServierSvg,
-  servierRawUrl,
-  type ServierIcon,
-} from '../services/servierIcons'
+  bioiconsRawUrl,
+  clearBioiconsCache,
+  fetchBioiconsIndex,
+  fetchBioiconsSvg,
+  type BioiconsIcon,
+} from '../services/bioiconsIcons'
 import type { Icon } from '../types'
 
-interface ExternalIconSearchProps {
+interface BioiconsSearchProps {
   onAddIcon: (icon: Icon) => void
 }
 
@@ -24,20 +24,31 @@ type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 const CATEGORIES = ['All'] as const
 
-export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
+// A short, human-readable license label for the card tooltip/footer —
+// bioicons.com's folder names ("cc-by-4.0") aren't quite presentable.
+function licenseLabel(license: string): string {
+  if (license === 'cc-0') return 'CC0 (public domain)'
+  if (license === 'cc-by-3.0') return 'CC BY 3.0'
+  if (license === 'cc-by-4.0') return 'CC BY 4.0'
+  if (license === 'mit') return 'MIT'
+  if (license === 'bsd') return 'BSD'
+  return license
+}
+
+export function BioiconsSearch({ onAddIcon }: BioiconsSearchProps) {
   const [loadState, setLoadState] = useState<LoadState>('idle')
-  const [icons, setIcons] = useState<ServierIcon[]>([])
+  const [icons, setIcons] = useState<BioiconsIcon[]>([])
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [selectedCat, setSelectedCat] = useState('All')
   const [addingId, setAddingId] = useState<string | null>(null)
 
   async function handleLoad(forceRefresh = false) {
-    if (forceRefresh) clearServierCache()
+    if (forceRefresh) clearBioiconsCache()
     setLoadState('loading')
     setError('')
     try {
-      const result = await fetchServierIndex()
+      const result = await fetchBioiconsIndex()
       setIcons(result)
       setLoadState('ready')
     } catch (err) {
@@ -63,19 +74,21 @@ export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
       .slice(0, 120)
   }, [icons, query, selectedCat])
 
-  async function handleAdd(icon: ServierIcon) {
+  async function handleAdd(icon: BioiconsIcon) {
     if (addingId) return
     setAddingId(icon.id)
     try {
-      const svgContent = await fetchServierSvg(icon)
+      const svgContent = await fetchBioiconsSvg(icon)
       const internalIcon: Icon = {
         id: icon.id,
         name: icon.name,
-        category: `Servier · ${icon.category}`,
+        category: `Bioicons · ${icon.category}`,
         tags: icon.tags,
-        source: 'servier',
+        source: 'bioicons',
         svgContent,
-        attribution: { author: 'Servier Medical Art', license: 'CC BY 3.0' },
+        attribution: icon.requiresAttribution
+          ? { author: icon.author, license: licenseLabel(icon.license) }
+          : undefined,
       }
       onAddIcon(internalIcon)
     } catch {
@@ -89,13 +102,15 @@ export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
   if (loadState === 'idle' || loadState === 'error') {
     return (
       <div className="flex flex-col items-center px-4 py-8 gap-4 text-center">
-        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
-          <ExternalLink className="w-5 h-5 text-blue-400" />
+        <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center">
+          <ExternalLink className="w-5 h-5 text-teal-400" />
         </div>
         <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-700">Servier Medical Art</p>
+          <p className="text-xs font-medium text-gray-700">Bioicons</p>
           <p className="text-[10px] text-gray-400 leading-relaxed">
-            ~3,000 biological icons released under CC BY 3.0.
+            ~1,400 open science icons under CC0, CC BY, MIT, or BSD.
+            <br />
+            Share-alike (CC BY-SA) icons are excluded.
             <br />
             The index is cached locally for 48 hours.
           </p>
@@ -110,15 +125,15 @@ export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
 
         <button
           onClick={() => handleLoad(false)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white text-xs font-medium rounded-lg hover:bg-blue-600 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-teal-500 text-white text-xs font-medium rounded-lg hover:bg-teal-600 transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          {error ? 'Retry' : 'Load Servier Icons'}
+          {error ? 'Retry' : 'Load Bioicons'}
         </button>
 
         <p className="text-[10px] text-gray-400">
           Icons from{' '}
-          <span className="font-medium text-gray-500">github.com/holtzy/servier</span>
+          <span className="font-medium text-gray-500">bioicons.com</span>
         </p>
       </div>
     )
@@ -128,7 +143,7 @@ export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
   if (loadState === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <Loader2 className="w-7 h-7 text-blue-400 animate-spin" />
+        <Loader2 className="w-7 h-7 text-teal-400 animate-spin" />
         <p className="text-xs text-gray-400">Fetching icon index from GitHub…</p>
         <p className="text-[10px] text-gray-300">Cached for 48 h after first load</p>
       </div>
@@ -146,7 +161,7 @@ export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${icons.length.toLocaleString()} icons…`}
-            className="flex-1 px-2.5 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="flex-1 px-2.5 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
           />
           <button
             onClick={() => handleLoad(true)}
@@ -165,7 +180,7 @@ export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
               onClick={() => setSelectedCat(cat)}
               className={`whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
                 selectedCat === cat
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-teal-500 text-white'
                   : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -198,30 +213,33 @@ export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
                   className={`relative flex flex-col items-center p-2 bg-white rounded-lg border border-gray-200 transition-all group select-none ${
                     isAdding
                       ? 'opacity-60 cursor-wait'
-                      : 'cursor-pointer hover:border-blue-400 hover:shadow-sm'
+                      : 'cursor-pointer hover:border-teal-400 hover:shadow-sm'
                   }`}
-                  title={`${icon.name} — ${icon.category}\nClick to add to canvas`}
+                  title={`${icon.name} — ${icon.category}\n${licenseLabel(icon.license)} · ${icon.author}\nClick to add to canvas`}
                 >
                   {isAdding ? (
                     <div className="w-12 h-12 flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                      <Loader2 className="w-5 h-5 text-teal-400 animate-spin" />
                     </div>
                   ) : (
                     <img
-                      src={servierRawUrl(icon)}
+                      src={bioiconsRawUrl(icon.path, icon.branch)}
                       alt={icon.name}
                       className="w-12 h-12 object-contain"
                       loading="lazy"
                     />
                   )}
-                  <span className="mt-1 text-[10px] text-center text-gray-600 leading-tight line-clamp-2 group-hover:text-blue-600">
+                  <span className="mt-1 text-[10px] text-center text-gray-600 leading-tight line-clamp-2 group-hover:text-teal-600">
                     {icon.name}
                   </span>
+                  {icon.requiresAttribution && (
+                    <span className="text-[8px] text-amber-500 leading-tight">© credit</span>
+                  )}
 
                   {/* Add indicator */}
                   {!isAdding && (
                     <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center">
                         <Plus className="w-2.5 h-2.5 text-white" />
                       </div>
                     </div>
@@ -236,7 +254,7 @@ export function ExternalIconSearch({ onAddIcon }: ExternalIconSearchProps) {
       {/* Footer */}
       <div className="px-3 py-1.5 border-t border-gray-100 text-center">
         <p className="text-[9px] text-gray-300">
-          Servier Medical Art · CC BY 3.0 · Click icon to add
+          Bioicons · CC0 / CC BY / MIT / BSD · © marks a required credit
         </p>
       </div>
     </div>

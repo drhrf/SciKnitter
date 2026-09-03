@@ -8,7 +8,13 @@
  * SVG thumbnails are served directly from raw.githubusercontent.com
  * (CORS-enabled). Full SVG content is fetched on-demand when the
  * user adds an icon to the canvas.
+ *
+ * The underlying repo tree fetch is shared with bioiconsIcons.ts (the rest
+ * of the same repo, minus this Servier slice) via fetchBioiconsTree, so
+ * opening both tabs costs one GitHub API call, not two.
  */
+
+import { fetchBioiconsTree } from './bioiconsIcons'
 
 const OWNER = 'duerrsimon'
 const REPO = 'bioicons'
@@ -96,35 +102,9 @@ export async function fetchServierIndex(): Promise<ServierIcon[]> {
   const cached = readCache()
   if (cached) return cached.icons
 
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`
-  const res = await fetch(url, {
-    headers: { Accept: 'application/vnd.github.v3+json' },
-  })
-
-  if (res.status === 404) {
-    throw new Error(`Repository "${OWNER}/${REPO}" not found on GitHub.`)
-  }
-  if (res.status === 403) {
-    const reset = res.headers.get('X-RateLimit-Reset')
-    const time = reset
-      ? new Date(Number(reset) * 1000).toLocaleTimeString()
-      : 'soon'
-    throw new Error(`GitHub API rate limit reached — resets at ${time}.`)
-  }
-  if (!res.ok) {
-    throw new Error(`GitHub API error ${res.status}: ${res.statusText}`)
-  }
-
-  const body: { tree: Array<{ type: string; path: string }> } = await res.json()
-
-  const icons = body.tree
-    .filter(
-      (f) =>
-        f.type === 'blob' &&
-        f.path.startsWith(SERVIER_PREFIX) &&
-        f.path.includes('/Servier/') &&
-        /\.svg$/i.test(f.path),
-    )
+  const tree = await fetchBioiconsTree()
+  const icons = tree
+    .filter((f) => f.path.startsWith(SERVIER_PREFIX) && f.path.includes('/Servier/'))
     .map((f) => pathToIcon(f.path))
 
   if (icons.length === 0) {

@@ -1,10 +1,17 @@
+/** Credit required by a CC-BY-family icon's license — shown in the export footnote. */
+export interface IconAttribution {
+  author: string
+  license: string
+}
+
 export interface Icon {
   id: string
   name: string
   category: string
   tags: string[]
-  source: 'servier' | 'bioart' | 'custom'
+  source: 'servier' | 'bioart' | 'custom' | 'bioicons'
   svgContent: string
+  attribution?: IconAttribution
 }
 
 export interface IconNodeData {
@@ -19,6 +26,7 @@ export interface IconNodeData {
   opacity?: number
   cornerRadius?: number
   gradientTo?: string
+  attribution?: IconAttribution
   [key: string]: unknown
 }
 
@@ -85,6 +93,7 @@ export type DiagramNodeExport =
       opacity?: number
       cornerRadius?: number
       gradientTo?: string
+      attribution?: IconAttribution
     }
   | {
       nodeType: 'text'

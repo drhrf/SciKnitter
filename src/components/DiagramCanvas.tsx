@@ -38,6 +38,7 @@ import { PanelNode } from './PanelNode'
 import { CustomEdge } from './CustomEdge'
 import { rfToSpec, specToRFEdges, specToRFNodes } from '../utils/diagram'
 import { fetchServierSvgById } from '../services/servierIcons'
+import { fetchBioiconsSvgById } from '../services/bioiconsIcons'
 import { sanitizeSvg } from '../services/bioartIcons'
 import { resolveLayoutOverlaps } from '../utils/resolveTextOverlaps'
 import { captureElement, captureBlob, copyBlobToClipboard, triggerDownload } from '../utils/exportImage'
@@ -81,6 +82,19 @@ const defaultEdgeOptions = {
   data: { edgeStyle: 'arrow' as const },
 }
 
+// CC-BY-family icons (Servier, some Bioicons entries) require attribution;
+// CC0/MIT/BSD/public-domain sources don't carry an `attribution` value at
+// all, so this only ever credits what's actually required. Dedupes by
+// author+license since a diagram can use several icons from the same source.
+function buildAttributionText(nodes: Node[]): string | null {
+  const credits = new Map<string, string>()
+  for (const n of nodes) {
+    const attribution = (n.data as IconNodeData)?.attribution
+    if (attribution) credits.set(`${attribution.author}|${attribution.license}`, `${attribution.author} (${attribution.license})`)
+  }
+  return credits.size > 0 ? `Icons: ${[...credits.values()].join(' · ')}` : null
+}
+
 function createRFNode(icon: Icon, position: { x: number; y: number }): Node {
   const data: IconNodeData = {
     iconId: icon.id,
@@ -88,6 +102,7 @@ function createRFNode(icon: Icon, position: { x: number; y: number }): Node {
     label: icon.name,
     category: icon.category,
     bgColor: 'transparent',
+    attribution: icon.attribution,
   }
   return {
     id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -162,8 +177,12 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
 
     // Shared setup for both file export and clipboard copy: find the live
     // viewport DOM node, clear any selection outline/resize handles so they
-    // don't leak into the capture, and compute the pan/zoom transform that
-    // fits the whole diagram (plus padding) into the output image.
+    // don't leak into the capture, compute the pan/zoom transform that fits
+    // the whole diagram (plus padding, plus an attribution footer if any
+    // icon on canvas requires one) into the output image, and — if a footer
+    // is needed — temporarily inject it as a real DOM child of the captured
+    // element so html-to-image picks it up. Callers MUST call the returned
+    // cleanup() once the capture is done, success or failure.
     async function prepareCapture(scale: number) {
       if (nodes.length === 0) return null
       const viewportEl = wrapperRef.current?.querySelector('.react-flow__viewport') as HTMLElement | null
@@ -176,20 +195,42 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
         await new Promise(requestAnimationFrame)
       }
 
+      const creditText = buildAttributionText(nodes)
+      const FOOTER_HEIGHT = creditText ? 26 : 0
+
       const bounds = getNodesBounds(nodes)
       const paddedBounds = {
         x: bounds.x - EXPORT_PADDING,
         y: bounds.y - EXPORT_PADDING,
         width: bounds.width + EXPORT_PADDING * 2,
-        height: bounds.height + EXPORT_PADDING * 2,
+        height: bounds.height + EXPORT_PADDING * 2 + FOOTER_HEIGHT,
       }
       const width = Math.max(1, Math.round(paddedBounds.width * scale))
       const height = Math.max(1, Math.round(paddedBounds.height * scale))
       const viewport = getViewportForBounds(paddedBounds, width, height, scale, scale, 0)
 
+      let footerEl: HTMLDivElement | null = null
+      if (creditText) {
+        footerEl = document.createElement('div')
+        footerEl.textContent = creditText
+        Object.assign(footerEl.style, {
+          position: 'absolute',
+          left: `${paddedBounds.x}px`,
+          top: `${paddedBounds.y + paddedBounds.height - FOOTER_HEIGHT}px`,
+          width: `${paddedBounds.width}px`,
+          textAlign: 'center',
+          fontSize: '11px',
+          color: '#94a3b8',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          pointerEvents: 'none',
+        })
+        viewportEl.appendChild(footerEl)
+      }
+
       return {
         viewportEl,
         style: { width, height, transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})` },
+        cleanup: () => footerEl?.remove(),
       }
     }
 
@@ -243,6 +284,37 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
                     ),
                   )
                 } catch { /* ignore */ }
+              }),
+            )
+          }
+
+          // Async-resolve SVG content for Bioicons (LLM specs carry only the id)
+          const bioiconsNodes = rfNodes.filter((n) =>
+            (n.data as IconNodeData).iconId?.startsWith('bioicons:'),
+          )
+          if (bioiconsNodes.length > 0) {
+            Promise.all(
+              bioiconsNodes.map(async (n) => {
+                const result = await fetchBioiconsSvgById((n.data as IconNodeData).iconId)
+                if (!result) return
+                const requiresAttribution = result.license.startsWith('cc-by-') && !result.license.includes('sa')
+                setNodes((nds) =>
+                  nds.map((nd) =>
+                    nd.id === n.id
+                      ? {
+                          ...nd,
+                          data: {
+                            ...nd.data,
+                            svgContent: result.svgContent,
+                            category: result.category,
+                            attribution: requiresAttribution
+                              ? { author: result.author, license: result.license }
+                              : undefined,
+                          },
+                        }
+                      : nd,
+                  ),
+                )
               }),
             )
           }
@@ -341,16 +413,24 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
         exportImage: async (format, filename, opts) => {
           const prepared = await prepareCapture(opts.scale)
           if (!prepared) return
-          const dataUrl = await captureElement(format, prepared.viewportEl, prepared.style, opts.bgColor)
-          triggerDownload(dataUrl, filename)
+          try {
+            const dataUrl = await captureElement(format, prepared.viewportEl, prepared.style, opts.bgColor)
+            triggerDownload(dataUrl, filename)
+          } finally {
+            prepared.cleanup()
+          }
         },
         copyImageToClipboard: async (bgColor) => {
           const prepared = await prepareCapture(2)
           if (!prepared) return false
-          const blob = await captureBlob(prepared.viewportEl, prepared.style, bgColor)
-          if (!blob) return false
-          await copyBlobToClipboard(blob)
-          return true
+          try {
+            const blob = await captureBlob(prepared.viewportEl, prepared.style, bgColor)
+            if (!blob) return false
+            await copyBlobToClipboard(blob)
+            return true
+          } finally {
+            prepared.cleanup()
+          }
         },
       }),
       [nodes, edges, setNodes, setEdges, getNodesBounds],

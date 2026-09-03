@@ -5,9 +5,10 @@ import { getAllIcons, getCategories } from '../data/iconsIndex'
 import { clearBioartCache, fetchBioartIndex, fetchBioartSvg, type BioartIcon } from '../services/bioartIcons'
 import { addRecent, getFavorites, getRecents, isFavorite, toggleFavorite } from '../services/iconPreferences'
 import { ExternalIconSearch } from './ExternalIconSearch'
+import { BioiconsSearch } from './BioiconsSearch'
 import type { Icon } from '../types'
 
-type Tab = 'library' | 'servier' | 'nihbioart' | 'saved'
+type Tab = 'library' | 'servier' | 'nihbioart' | 'bioicons' | 'saved'
 
 interface IconBrowserProps {
   onAddIcon: (icon: Icon) => void
@@ -364,7 +365,8 @@ function NIHBioartTab({ onAddIcon }: IconBrowserProps) {
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'library', label: 'Library' },
   { id: 'servier', label: 'Servier' },
-  { id: 'nihbioart', label: 'NIH Bioart' },
+  { id: 'nihbioart', label: 'Bioart' },
+  { id: 'bioicons', label: 'Bioicons' },
   { id: 'saved', label: '★ Saved' },
 ]
 
@@ -406,12 +408,12 @@ export function IconBrowser({ onAddIcon: onAddIconProp }: IconBrowserProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 bg-gray-50">
+      <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto scrollbar-hide">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-2 text-[10px] font-medium transition-colors border-b-2 ${
+            className={`shrink-0 px-2 py-2 text-[10px] font-medium whitespace-nowrap transition-colors border-b-2 ${
               activeTab === tab.id
                 ? 'border-blue-500 text-blue-600 bg-white'
                 : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-100'
@@ -427,6 +429,7 @@ export function IconBrowser({ onAddIcon: onAddIconProp }: IconBrowserProps) {
         {activeTab === 'library' && <LibraryTab onAddIcon={onAddIcon} />}
         {activeTab === 'servier' && <ExternalIconSearch onAddIcon={onAddIcon} />}
         {activeTab === 'nihbioart' && <NIHBioartTab onAddIcon={onAddIcon} />}
+        {activeTab === 'bioicons' && <BioiconsSearch onAddIcon={onAddIcon} />}
         {activeTab === 'saved' && <SavedTab onAddIcon={onAddIcon} />}
       </div>
     </aside>
